@@ -5,6 +5,7 @@ import Footer from "@/src/components/Footer";
 import { CheckCircle2, ExternalLink } from "lucide-react";
 import Image from "next/image";
 import DashboardNavbar from "@/src/components/DashboardNavbar";
+import { useRouter } from "next/navigation";
 
 interface Task {
   _id: string;
@@ -13,6 +14,8 @@ interface Task {
   rewardPerFollower: number;
   totalCost: number;
   status: string;
+  userPhoto?: string | null;
+  userName?: string | null;
 }
 
 const fallbackProfiles = [
@@ -26,10 +29,46 @@ const fallbackProfiles = [
 ];
 
 export default function EarnCoinsPage() {
+  const router = useRouter();
+
   const [highlighted, setHighlighted] = useState<string | null>(null);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const [canVerify, setCanVerify] = useState<Record<string, boolean>>({});
+  const [completed, setCompleted] = useState<Record<string, boolean>>({});
+  const [verifying, setVerifying] = useState<Record<string, boolean>>({});
+
+  // load completed tasks from localStorage (per user & browser)
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const stored = localStorage.getItem("completedTasks");
+    if (!stored || stored.trim().length === 0) {
+      localStorage.setItem("completedTasks", JSON.stringify({}));
+      return;
+    }
+
+    try {
+      const parsed = JSON.parse(stored) as Record<string, boolean>;
+      if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+        setCompleted(parsed);
+      } else {
+        localStorage.setItem("completedTasks", JSON.stringify({}));
+      }
+    } catch (err) {
+      console.error("Failed to parse completedTasks from localStorage", err);
+      localStorage.setItem("completedTasks", JSON.stringify({}));
+    }
+  }, []);
+
+  // save completed tasks to localStorage
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    localStorage.setItem("completedTasks", JSON.stringify(completed));
+  }, [completed]);
+
+  // fetch tasks from API (only active ones per your /api/tasks)
   useEffect(() => {
     const fetchTasks = async () => {
       try {
@@ -52,6 +91,42 @@ export default function EarnCoinsPage() {
   }, []);
 
   const hasTasks = tasks.length > 0;
+
+  const handleVerify = async (taskId: string) => {
+    if (!canVerify[taskId] || verifying[taskId]) return;
+
+    setVerifying((prev) => ({ ...prev, [taskId]: true }));
+    try {
+      const res = await fetch("/api/tasks/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ taskId }),
+      });
+
+      const text = await res.text();
+      let data: any = null;
+      try {
+        data = text ? JSON.parse(text) : null;
+      } catch (e) {
+        console.error("verify JSON parse error:", e, "raw:", text);
+      }
+
+      if (!res.ok) {
+        console.error("Verify error:", data?.error || text);
+        return;
+      }
+
+      // mark as completed locally (card stays visible but disabled)
+      setCompleted((prev) => ({ ...prev, [taskId]: true }));
+
+      // refresh page data (e.g. coins in navbar)
+      router.refresh();
+    } catch (e) {
+      console.error("Verify request failed:", e);
+    } finally {
+      setVerifying((prev) => ({ ...prev, [taskId]: false }));
+    }
+  };
 
   return (
     <>
@@ -93,24 +168,46 @@ export default function EarnCoinsPage() {
               </div>
             )}
 
-            {/* If there are real tasks from DB */}
+            {/* Real tasks from DB */}
             {hasTasks &&
               tasks.map((task) => {
                 const isHighlighted = highlighted === task._id;
+                const canV = !!canVerify[task._id];
+                const isVerifying = !!verifying[task._id];
+                const isCompleted = !!completed[task._id];
 
                 return (
                   <div
                     key={task._id}
-                    className="relative flex flex-col rounded-4xl bg-[#1b0d24] px-5 py-6 shadow-[0_24px_70px_rgba(0,0,0,0.7)]"
+                    className={`relative flex flex-col rounded-4xl px-5 py-6 shadow-[0_24px_70px_rgba(0,0,0,0.7)] ${
+                      isCompleted ? "bg-[#140b1a] opacity-60" : "bg-[#1b0d24]"
+                    }`}
                   >
                     {/* coins badge (reward per follower) */}
                     <div className="absolute right-4 top-4 rounded-full bg-pink-500 px-3 py-1 text-[10px] font-semibold">
                       +{task.rewardPerFollower} Coins / follow
                     </div>
 
-                    {/* avatar placeholder */}
+                    {/* completed badge */}
+                    {isCompleted && (
+                      <div className="absolute left-4 top-4 rounded-full bg-green-600 px-3 py-1 text-[10px] font-semibold">
+                        Completed
+                      </div>
+                    )}
+
+                    {/* avatar */}
                     <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full border-4 border-pink-500/60 bg-black shadow-[0_0_0_6px_rgba(255,255,255,0.07)]">
-                      <span className="text-lg">🎵</span>
+                      {task.userPhoto ? (
+                        <Image
+                          src={task.userPhoto}
+                          alt={task.userName || "User"}
+                          width={80}
+                          height={80}
+                          className="h-20 w-20 rounded-full object-cover"
+                        />
+                      ) : (
+                        <span className="text-lg">🎵</span>
+                      )}
                     </div>
 
                     {/* handle & category */}
@@ -125,25 +222,79 @@ export default function EarnCoinsPage() {
 
                     {/* actions */}
                     <div className="mt-6 space-y-3 text-[11px]">
-                      <a
-                        href={task.tiktokLink}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={() => setHighlighted(task._id)}
-                        className="flex w-full items-center justify-center gap-2 rounded-full bg-[#241027] px-4 py-2 text-xs font-semibold text-white/80 hover:bg-[#2d1231]"
+                      <button
+                        type="button"
+                        disabled={isCompleted}
+                        onClick={() => {
+                          if (isCompleted) return;
+                          setHighlighted(task._id);
+                          // start 15s timer to enable verify
+                          setCanVerify((prev) => ({
+                            ...prev,
+                            [task._id]: false,
+                          }));
+                          setTimeout(() => {
+                            setCanVerify((prev) => ({
+                              ...prev,
+                              [task._id]: true,
+                            }));
+                          }, 15000);
+                          window.open(task.tiktokLink, "_blank", "noopener");
+                        }}
+                        className={`flex w-full items-center justify-center gap-2 rounded-full px-4 py-2 text-xs font-semibold ${
+                          isCompleted
+                            ? "bg-[#241027]/40 text-white/40 cursor-not-allowed"
+                            : "bg-[#241027] text-white/80 hover:bg-[#2d1231]"
+                        }`}
                       >
                         <ExternalLink className="h-3 w-3" />
-                        <span>Open TikTok Profile</span>
-                      </a>
+                        <span>
+                          {isCompleted
+                            ? "Already Verified"
+                            : "Open TikTok Profile"}
+                        </span>
+                      </button>
 
-                      {isHighlighted ? (
+                      {isCompleted ? (
+                        <>
+                          <button
+                            disabled
+                            className="flex w-full items-center justify-center gap-2 rounded-full bg-[#062d16]/40 px-4 py-2 text-xs font-semibold text-[#45e86c]/60 cursor-not-allowed"
+                          >
+                            <CheckCircle2 className="h-3 w-3" />
+                            <span>Coins Added</span>
+                          </button>
+                          <button
+                            disabled
+                            className="flex w-full items-center justify-center gap-2 rounded-full bg-pink-500/30 px-4 py-2 text-xs font-semibold text-white/60 cursor-not-allowed"
+                          >
+                            <span>Verified</span>
+                          </button>
+                        </>
+                      ) : isHighlighted ? (
                         <>
                           <button className="flex w-full items-center justify-center gap-2 rounded-full bg-[#062d16] px-4 py-2 text-xs font-semibold text-[#45e86c]">
                             <CheckCircle2 className="h-3 w-3" />
                             <span>Link Opened</span>
                           </button>
-                          <button className="flex w-full items-center justify-center gap-2 rounded-full bg-pink-500 px-4 py-2 text-xs font-semibold text-white shadow-[0_10px_30px_rgba(255,0,122,0.6)] hover:bg-pink-600">
-                            <span>Verify Now</span>
+
+                          <button
+                            type="button"
+                            disabled={!canV || isVerifying}
+                            onClick={() => handleVerify(task._id)}
+                            className={`flex w-full items-center justify-center gap-2 rounded-full px-4 py-2 text-xs font-semibold shadow-[0_10px_30px_rgba(255,0,122,0.6)] ${
+                              canV && !isVerifying
+                                ? "bg-pink-500 text-white hover:bg-pink-600"
+                                : "bg-pink-500/40 text-white/60 cursor-not-allowed"
+                            }`}
+                          >
+                            <span>
+                              {isVerifying
+                                ? "Verifying..."
+                                : canV
+                                ? "Verify Now"
+                                : "Wait 15s to verify"}
+                            </span>
                           </button>
                         </>
                       ) : (
@@ -162,8 +313,9 @@ export default function EarnCoinsPage() {
                 );
               })}
 
-            {/* If no tasks yet, show static example card */}
-            {!loading && !hasTasks &&
+            {/* Fallback static card if no tasks */}
+            {!loading &&
+              !hasTasks &&
               fallbackProfiles.map((p) => {
                 const isHighlighted = highlighted === String(p.id);
 

@@ -1,4 +1,4 @@
-import mongoose, { Schema, Document, models, model } from "mongoose";
+import { Schema, Document, models, model } from "mongoose";
 
 export interface ITask extends Document {
   userId: string;
@@ -7,6 +7,10 @@ export interface ITask extends Document {
   rewardPerFollower: number;
   totalCost: number;
   status: "pending" | "active" | "completed" | "cancelled";
+  createdByRole: "admin" | "user";
+  priority: number;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 const TaskSchema = new Schema<ITask>(
@@ -20,6 +24,15 @@ const TaskSchema = new Schema<ITask>(
       type: String,
       enum: ["pending", "active", "completed", "cancelled"],
       default: "pending",
+    },
+    createdByRole: {
+      type: String,
+      enum: ["admin", "user"],
+      default: "user",
+    },
+    priority: {
+      type: Number,
+      default: 0, // admin tasks: 100
     },
   },
   { timestamps: true }

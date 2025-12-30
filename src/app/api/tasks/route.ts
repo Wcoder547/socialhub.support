@@ -14,17 +14,43 @@ export async function GET() {
     }
 
     await dbConnect();
-    const user = await UserModel.findOne({ email: session.user.email }).lean();
 
-    if (!user) {
+    const currentUser = await UserModel.findOne({
+      email: session.user.email,
+    }).lean();
+
+    if (!currentUser) {
       return NextResponse.json({ tasks: [] }, { status: 200 });
     }
 
-    const tasks = await TaskModel.find({ userId: user._id.toString() })
-      .sort({ createdAt: -1 })
+    const tasks = await TaskModel.find({
+      status: "active",
+      $or: [{ createdByRole: "admin" }, { userId: currentUser._id.toString() }],
+    })
+      .sort({ priority: -1, createdAt: -1 })
       .lean();
 
-    return NextResponse.json({ tasks }, { status: 200 });
+    const tasksWithUser = await Promise.all(
+      tasks.map(async (task) => {
+        if (task.createdByRole === "admin") {
+          return {
+            ...task,
+            userPhoto: null,
+            userName: "Featured Campaign",
+          };
+        }
+
+        const creator = await UserModel.findById(task.userId).lean();
+
+        return {
+          ...task,
+          userPhoto: creator?.photo || null,
+          userName: creator?.name || null,
+        };
+      })
+    );
+
+    return NextResponse.json({ tasks: tasksWithUser }, { status: 200 });
   } catch (err) {
     console.error("GET /api/tasks error:", err);
     return NextResponse.json(
