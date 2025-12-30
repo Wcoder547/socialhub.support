@@ -5,6 +5,7 @@ export interface User extends Document {
   name: string;
   email: string;
   photo: string;
+  coins: number;
 }
 
 const UserSchema: Schema<User> = new Schema({
@@ -21,6 +22,7 @@ const UserSchema: Schema<User> = new Schema({
     type: String,
     required: [true, "Please Enter photo"],
   },
+  coins: { type: Number, default: 50 }, // start with 50
 });
 
 const UserModel =

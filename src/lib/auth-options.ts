@@ -31,7 +31,12 @@ export const authOptions: NextAuthOptions = {
             name: user.name || "",
             email,
             photo: user.image || "",
+            coins: 50,
           });
+        } else if (existing.coins == null) {
+          // Old user without coins field → give initial 50
+          existing.coins = 50;
+          await existing.save();
         }
 
         return true;
@@ -47,10 +52,12 @@ export const authOptions: NextAuthOptions = {
         const dbUser = await UserModel.findOne({
           email: session.user.email,
         }).lean();
+        console.log("SESSION CALLBACK dbUser:", dbUser);
 
         if (dbUser) {
           (session.user as any).id = dbUser._id.toString();
           (session.user as any).photo = dbUser.photo;
+          (session.user as any).coins = dbUser.coins ?? 0;
         }
       }
       return session;

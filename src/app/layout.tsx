@@ -1,6 +1,10 @@
+// app/layout.tsx
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { getServerSession } from "next-auth";
+import { authOptions } from "../lib/auth-options";
+import SessionProvider from "@/src/providers/SessionProvider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -17,17 +21,17 @@ export const metadata: Metadata = {
   description: "created by socialhub.support",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
+  const session = await getServerSession(authOptions);
+
   return (
     <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        {children}
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+        <SessionProvider session={session}>{children}</SessionProvider>
       </body>
     </html>
   );

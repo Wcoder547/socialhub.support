@@ -11,11 +11,14 @@ import {
   Target,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 
 
 
 export default function DashboardPage() {
   const router = useRouter();
+  const { data: session, status } = useSession();
+  const name = session?.user?.name || "User";
   return (
     <main className="min-h-screen bg-[#120814] text-white">
       {/* Top nav */}
@@ -29,7 +32,7 @@ export default function DashboardPage() {
           {/* Heading */}
           <div className="text-center">
             <h1 className="text-3xl font-semibold md:text-4xl">
-              Welcome back, Creator
+              Welcome back, {name}!
             </h1>
             <p className="mt-3 text-sm text-white/70">
               Ready to grow? Choose your path below to boost your presence.

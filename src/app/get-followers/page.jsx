@@ -1,53 +1,179 @@
 "use client";
 
 import DashboardNavbar from "../../components/DashboardNavbar";
-import { Coins } from "lucide-react";
+import { CheckCircle2, Coins } from "lucide-react";
 import Footer from "../../components/Footer";
 import { useState } from "react";
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 
 export default function CreateTaskPage() {
+  const router = useRouter();
   const [followers, setFollowers] = useState(50);
+  const [reward, setReward] = useState(6);
+  const [tiktokLink, setTiktokLink] = useState(
+    "https://www.tiktok.com/@user123"
+  );
+  const [isSubmitting, setIsSubmitting] = useState(false);
+const [errorMsg, setErrorMsg] = useState(null);
+
+ const [showSuccess, setShowSuccess] = useState(false);
+  const [lastTaskInfo, setLastTaskInfo] = useState(null);
+
   const min = 10;
   const max = 100;
   const percent = ((followers - min) / (max - min)) * 100;
 
-  const [reward, setReward] = useState(6);
-  const [balance, setBalance] = useState(1250);
-  const [tiktokLink, setTiktokLink] = useState(
-    "https://www.tiktok.com/@user123"
+  const { data: session, status } = useSession();
+  const [localCoins, setLocalCoins] = useState(
+    session?.user?.coins ?? 0
   );
 
+  // keep localCoins in sync when session loads
+  if (status === "authenticated" && localCoins !== session?.user?.coins) {
+    setLocalCoins(session?.user?.coins ?? 0);
+  }
+
+  const coins = localCoins;
   const options = [4, 6, 8, 10];
   const recommended = 6;
 
   const totalCost = followers * reward;
-  const remaining = balance - totalCost;
+  const remaining = coins - totalCost;
   const hasEnough = remaining >= 0;
   const shortBy = Math.abs(remaining);
+
+  const handleCreateTask = async () => {
+  if (!hasEnough || isSubmitting) return;
+  setIsSubmitting(true);
+  setErrorMsg(null);
+
+  try {
+    const res = await fetch("/api/tasks/create", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ tiktokLink, followers, reward }),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      setErrorMsg(data.error || "Failed to create task");
+      return;
+    }
+
+    // Update coins locally
+    setLocalCoins(data.newBalance);
+
+    // Save task info for the dialog
+    const info = {
+      followers,
+      reward,
+      totalCost,
+      remaining: data.newBalance,
+      tiktokLink,
+    };
+    setLastTaskInfo(info);
+    setShowSuccess(true);
+  } catch (err) {
+    console.error(err);
+    setErrorMsg("Something went wrong.");
+  } finally {
+    setIsSubmitting(false);
+  }
+};
+
+
+  // optionally block UI while session is loading
+  if (status === "loading") {
+    return (
+      <main className="min-h-screen bg-[#120814] text-white">
+        <DashboardNavbar />
+        <div className="p-8">Loading...</div>
+      </main>
+    );
+  }
 
   return (
     <>
       <main className="min-h-screen bg-[#120814] text-white">
         <DashboardNavbar />
+{showSuccess && lastTaskInfo && (
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+    <div className="w-full max-w-sm rounded-2xl bg-[#1b0d24] p-6 shadow-[0_24px_70px_rgba(0,0,0,0.8)]">
+      <div className="flex items-center gap-2">
+        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-green-500/20">
+          <CheckCircle2 className="h-5 w-5 text-green-400" />
+        </div>
+        <div>
+          <h2 className="text-lg font-semibold">Task Created!</h2>
+          <p className="text-xs text-white/60">
+            Your follower campaign has been created successfully.
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-4 space-y-2 text-xs">
+        <div className="flex justify-between">
+          <span className="text-white/60">TikTok Link</span>
+          <span className="max-w-[160px] truncate text-right">
+            {lastTaskInfo.tiktokLink}
+          </span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-white/60">Followers</span>
+          <span>{lastTaskInfo.followers}</span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-white/60">Reward / follower</span>
+          <span>{lastTaskInfo.reward} Coins</span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-white/60">Total Spent</span>
+          <span className="font-semibold text-pink-400">
+            {lastTaskInfo.totalCost} Coins
+          </span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-white/60">New Balance</span>
+          <span className="font-semibold text-green-400">
+            {lastTaskInfo.remaining} Coins
+          </span>
+        </div>
+      </div>
+
+      <button
+        type="button"
+        className="mt-6 w-full rounded-full bg-pink-500 py-2.5 text-sm font-semibold text-white hover:bg-pink-600"
+        onClick={() => {
+          // Build query string to pass info to /earn-coins
+          const params = new URLSearchParams({
+            followers: String(lastTaskInfo.followers),
+            reward: String(lastTaskInfo.reward),
+            totalCost: String(lastTaskInfo.totalCost),
+            remaining: String(lastTaskInfo.remaining),
+          }).toString();
+
+          router.push(`/earn-coins?${params}`);
+        }}
+      >
+        View Details & Earn More
+      </button>
+    </div>
+  </div>
+)}
 
         <section className="bg-linear-to-b from-[#21061f] via-[#120814] to-[#120814]">
           <div className="mx-auto max-w-6xl px-4 py-8 md:px-8 md:py-10">
             {/* Top row */}
             <div className="flex flex-col justify-between gap-6 md:flex-row md:items-start">
-              <div>
-                <h1 className="text-2xl font-semibold md:text-4xl">
-                  Create New Task
-                </h1>
-                <p className="mt-3 max-w-xl text-sm text-white/70">
-                  Spend your coins to gain real TikTok followers quickly. Setup
-                  your campaign below.
-                </p>
-              </div>
+              {/* ...same as before... */}
 
               {/* Balance card */}
               <button
                 type="button"
-                className="w-full max-w-xs rounded-3xl bg-[#1b0d24] px-6 py-4 text-left shadow-[0_18px_45px_rgba(0,0,0,0.6)] hover:bg-[#22102c]">
+                className="w-full max-w-xs rounded-3xl bg-[#1b0d24] px-6 py-4 text-left shadow-[0_18px_45px_rgba(0,0,0,0.6)] hover:bg-[#22102c]"
+              >
                 <div className="flex items-center gap-3">
                   <div className="flex h-9 w-9 items-center justify-center rounded-full bg-pink-500/20">
                     <Coins className="h-5 w-5 text-pink-400" />
@@ -57,7 +183,7 @@ export default function CreateTaskPage() {
                       Current Balance
                     </div>
                     <div className="mt-1 text-lg font-semibold">
-                      {balance.toLocaleString()} Coins
+                      {coins.toLocaleString()} Coins
                     </div>
                   </div>
                 </div>
@@ -202,66 +328,74 @@ export default function CreateTaskPage() {
                 </button>
 
                 {/* Order summary */}
-                <div className="flex flex-col rounded-3xl bg-[#1b0d24] px-6 py-6 shadow-[0_24px_70px_rgba(0,0,0,0.7)]">
-                  <div className="text-sm font-semibold">Order Summary</div>
+              {/* Order summary */}
+<div className="flex flex-col rounded-3xl bg-[#1b0d24] px-6 py-6 shadow-[0_24px_70px_rgba(0,0,0,0.7)]">
+  <div className="text-sm font-semibold">Order Summary</div>
 
-                  <div className="mt-4 space-y-3 text-xs">
-                    <div className="flex items-center justify-between">
-                      <span className="text-white/60">Target Followers</span>
-                      <span>{followers}</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-white/60">Cost per Follower</span>
-                      <span>{reward} Coins</span>
-                    </div>
-                  </div>
+  <div className="mt-4 space-y-3 text-xs">
+    <div className="flex items-center justify-between">
+      <span className="text-white/60">Target Followers</span>
+      <span>{followers}</span>
+    </div>
+    <div className="flex items-center justify-between">
+      <span className="text-white/60">Cost per Follower</span>
+      <span>{reward} Coins</span>
+    </div>
+  </div>
 
-                  <div className="mt-5 border-t border-white/10 pt-4 text-xs">
-                    <div className="flex items-center justify-between">
-                      <span className="text-white/60">Total Cost</span>
-                      <span className="text-2xl font-semibold text-pink-400">
-                        {totalCost}
-                      </span>
-                    </div>
+  <div className="mt-5 border-t border-white/10 pt-4 text-xs">
+    <div className="flex items-center justify-between">
+      <span className="text-white/60">Total Cost</span>
+      <span className="text-2xl font-semibold text-pink-400">
+        {totalCost}
+      </span>
+    </div>
 
-                    {hasEnough ? (
-                      <div className="mt-2 text-right text-[11px] text-white/60">
-                        Remaining:{" "}
-                        <span className="font-semibold text-green-400">
-                          {remaining} Coins
-                        </span>
-                      </div>
-                    ) : (
-                      <div className="mt-2 text-right text-[11px] text-red-400">
-                        Insufficient balance. You need{" "}
-                        <span className="font-semibold">
-                          {shortBy} more Coins
-                        </span>
-                        .
-                      </div>
-                    )}
-                  </div>
+    {hasEnough ? (
+      <div className="mt-2 text-right text-[11px] text-white/60">
+        Remaining:{" "}
+        <span className="font-semibold text-green-400">
+          {remaining} Coins
+        </span>
+      </div>
+    ) : (
+      <div className="mt-2 text-right text-[11px] text-red-400">
+        Insufficient balance. You need{" "}
+        <span className="font-semibold">
+          {shortBy} more Coins
+        </span>
+        .
+      </div>
+    )}
+  </div>
 
-                  <button
-                    type="button"
-                    disabled={!hasEnough}
-                    className={`mt-6 flex w-full items-center justify-center gap-2 rounded-full py-3 text-sm font-semibold shadow-[0_18px_45px_rgba(255,0,122,0.7)] ${
-                      hasEnough
-                        ? "bg-pink-500 text-white hover:bg-pink-600"
-                        : "bg-pink-500/40 text-white/60 cursor-not-allowed"
-                    }`}
-                    onClick={() => {
-                      if (!hasEnough) return;
-                      alert(
-                        `Creating task for ${followers} followers at ${reward} coins each\nCost: ${totalCost}\nRemaining: ${remaining}`
-                      );
-                    }}>
-                    <span>🚀</span>
-                    <span>
-                      {hasEnough ? "Create Task" : "Insufficient Coins"}
-                    </span>
-                  </button>
-                </div>
+  {errorMsg && (
+    <p className="mt-2 text-xs text-red-400 text-right">
+      {errorMsg}
+    </p>
+  )}
+
+  <button
+    type="button"
+    disabled={!hasEnough || isSubmitting}
+    className={`mt-6 flex w-full items-center justify-center gap-2 rounded-full py-3 text-sm font-semibold shadow-[0_18px_45px_rgba(255,0,122,0.7)] ${
+      hasEnough && !isSubmitting
+        ? "bg-pink-500 text-white hover:bg-pink-600"
+        : "bg-pink-500/40 text-white/60 cursor-not-allowed"
+    }`}
+    onClick={handleCreateTask}
+  >
+    <span>🚀</span>
+    <span>
+      {isSubmitting
+        ? "Creating..."
+        : hasEnough
+        ? "Create Task"
+        : "Insufficient Coins"}
+    </span>
+  </button>
+</div>
+
               </div>
             </div>
           </div>
