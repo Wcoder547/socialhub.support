@@ -76,7 +76,7 @@ export async function POST(req: Request) {
       rewardPerFollower,
       totalCost,
       status: "active", // admin tasks go live immediately
-      userId: adminUser!._id.toString(),
+      userId: adminUser._id.toString(), // safe now
       createdByRole: "admin",
       priority: 100,
     });
