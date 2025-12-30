@@ -4,6 +4,7 @@ import { authOptions } from "../../../lib/auth-options";
 import { dbConnect } from "../../../lib/dbConnect";
 import UserModel from "../../../models/User.model";
 import TaskModel from "../../../models/Task.model";
+const session = await getServerSession(authOptions);
 
 export async function GET() {
   try {
