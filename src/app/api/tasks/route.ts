@@ -7,14 +7,14 @@ import TaskModel from "../../../models/Task.model";
 
 export async function GET() {
   try {
-    const session = await getServerSession(authOptions);
-
     if (!session?.user?.email) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
 
     await dbConnect();
 
+    // still resolve current user in case you need it later,
+    // but not using it for filtering tasks now
     const currentUser = await UserModel.findOne({
       email: session.user.email,
     }).lean();
@@ -23,11 +23,11 @@ export async function GET() {
       return NextResponse.json({ tasks: [] }, { status: 200 });
     }
 
+    // 🔴 show ALL active tasks, regardless of owner
     const tasks = await TaskModel.find({
       status: "active",
-      $or: [{ createdByRole: "admin" }, { userId: currentUser._id.toString() }],
     })
-      .sort({ priority: -1, createdAt: -1 })
+      .sort({ priority: -1, createdAt: -1 }) // high priority first
       .lean();
 
     const tasksWithUser = await Promise.all(
