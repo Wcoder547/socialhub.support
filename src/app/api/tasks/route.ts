@@ -4,10 +4,10 @@ import { authOptions } from "../../../lib/auth-options";
 import { dbConnect } from "../../../lib/dbConnect";
 import UserModel from "../../../models/User.model";
 import TaskModel from "../../../models/Task.model";
-const session = await getServerSession(authOptions);
 
 export async function GET() {
   try {
+    const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
