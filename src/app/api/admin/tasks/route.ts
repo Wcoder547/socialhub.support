@@ -47,34 +47,39 @@ export async function GET() {
 export async function POST(req: Request) {
   try {
     const admin = await getAdminFromCookie();
-    console.log("admin in POST /api/admin/tasks:", admin);
-
     if (!admin) {
       return NextResponse.json({ error: "Not authorized" }, { status: 401 });
     }
 
-    const body = await req.json();
-    console.log("body in POST /api/admin/tasks:", body);
+    const { tiktokLink, followers, rewardPerFollower, totalCost } =
+      await req.json();
 
-    const { tiktokLink, followers, rewardPerFollower, totalCost } = body;
+    if (!tiktokLink || !followers || !rewardPerFollower || !totalCost) {
+      return NextResponse.json({ error: "Missing fields" }, { status: 400 });
+    }
 
     await dbConnect();
 
     const adminUser = await UserModel.findById(admin.sub);
-    console.log("adminUser:", adminUser?._id);
+
+    if (!adminUser) {
+      // runtime guard + satisfies TS
+      return NextResponse.json(
+        { error: "Admin user not found" },
+        { status: 404 }
+      );
+    }
 
     const task = await TaskModel.create({
       tiktokLink,
       followers,
       rewardPerFollower,
       totalCost,
-      status: "active",
-      userId: adminUser._id.toString(),
+      status: "active", // admin tasks go live immediately
+      userId: adminUser._id.toString(), // safe now
       createdByRole: "admin",
       priority: 100,
     });
-
-    console.log("Created admin task:", task._id.toString());
 
     return NextResponse.json({ ok: true, task }, { status: 201 });
   } catch (err) {
