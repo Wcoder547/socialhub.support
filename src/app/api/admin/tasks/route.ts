@@ -6,16 +6,21 @@ import { cookies } from "next/headers";
 import jwt from "jsonwebtoken";
 
 const ADMIN_JWT_SECRET = process.env.ADMIN_JWT_SECRET || "dev-admin-secret";
-
+type AdminJwtPayload = {
+  sub: string;
+  role: "admin";
+  iat?: number;
+  exp?: number;
+};
 async function getAdminFromCookie() {
   const store = await cookies();
   const token = store.get("admin_token")?.value;
   if (!token) return null;
 
   try {
-    const decoded = jwt.verify(token, ADMIN_JWT_SECRET) as any;
+    const decoded = jwt.verify(token, ADMIN_JWT_SECRET) as AdminJwtPayload;
     if (decoded.role !== "admin") return null;
-    return decoded as { sub: string; role: "admin" };
+    return decoded;
   } catch {
     return null;
   }
