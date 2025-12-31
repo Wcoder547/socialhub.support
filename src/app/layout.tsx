@@ -5,6 +5,7 @@ import "./globals.css";
 import { getServerSession } from "next-auth";
 import { authOptions } from "../lib/auth-options";
 import SessionProvider from "@/src/providers/SessionProvider";
+import Script from "next/script";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -31,7 +32,16 @@ export default async function RootLayout({
   return (
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        <SessionProvider session={session}>{children}</SessionProvider>
+        <SessionProvider session={session}>
+          {children}
+
+          {/* Adsterra Social Bar script */}
+          <Script
+            id="adsterra-social-bar"
+            src="https://chipnarrativefatherinlaw.com/37/20/17/372017259d2537ce82a9ca8a8d7bcd7e.js"
+            strategy="afterInteractive"
+          />
+        </SessionProvider>
       </body>
     </html>
   );
