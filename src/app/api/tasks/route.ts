@@ -14,8 +14,6 @@ export async function GET() {
 
     await dbConnect();
 
-    // still resolve current user in case you need it later,
-    // but not using it for filtering tasks now
     const currentUser = await UserModel.findOne({
       email: session.user.email,
     }).lean();
@@ -24,7 +22,6 @@ export async function GET() {
       return NextResponse.json({ tasks: [] }, { status: 200 });
     }
 
-    // 🔴 show ALL active tasks, regardless of owner
     const tasks = await TaskModel.find({
       status: "active",
     })

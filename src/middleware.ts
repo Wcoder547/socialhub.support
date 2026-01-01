@@ -10,7 +10,7 @@ const ADMIN_COOKIE_NAME = "admin_token";
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  // ---------- USER AUTH VIA NEXTAUTH ----------
+
   const token = await getToken({
     req,
     secret: process.env.NEXTAUTH_SECRET,
@@ -32,7 +32,7 @@ export async function middleware(req: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // ---------- SIMPLE ADMIN AUTH (no jwt.verify) ----------
+
   if (pathname.startsWith("/admin")) {
     const adminToken = req.cookies.get(ADMIN_COOKIE_NAME)?.value;
 

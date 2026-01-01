@@ -1,4 +1,3 @@
-// lib/auth-options.ts
 import type { NextAuthOptions } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 import { dbConnect } from "../lib/dbConnect";
@@ -34,7 +33,6 @@ export const authOptions: NextAuthOptions = {
             coins: 50,
           });
         } else if (existing.coins == null) {
-          // Old user without coins field → give initial 50
           existing.coins = 50;
           await existing.save();
         }

@@ -19,7 +19,7 @@ export async function POST(req: Request) {
     if (!tiktokLink || !followers || !reward) {
       return NextResponse.json({ error: "Missing fields" }, { status: 400 });
     }
-
+    const doubledReward = reward * 2;
     const totalCost = followers * reward;
 
     await dbConnect();
@@ -36,7 +36,6 @@ export async function POST(req: Request) {
       );
     }
 
-    // Deduct coins and create task in a single flow
     user.coins -= totalCost;
     await user.save();
 
@@ -44,7 +43,7 @@ export async function POST(req: Request) {
       userId: user._id.toString(),
       tiktokLink,
       followers,
-      rewardPerFollower: reward,
+      rewardPerFollower: doubledReward,
       totalCost,
       status: "pending",
     });

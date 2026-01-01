@@ -7,21 +7,21 @@ import { FaCoins } from "react-icons/fa6";
 
 export default function LoginPage() {
   const handleGoogleLogin = () => {
-    // After successful Google login, redirect wherever you want:
+    
     signIn("google", { callbackUrl: "/dashboard" });
   };
 
   return (
     <main className="relative flex min-h-screen items-center justify-center bg-[#120814] text-white">
-      {/* background gradient blobs */}
+ 
       <div className="pointer-events-none fixed inset-0">
         <div className="absolute -left-40 top-0 h-96 w-96 rounded-full bg-pink-900/40 blur-3xl" />
         <div className="absolute -right-32 bottom-0 h-96 w-96 rounded-full bg-pink-800/40 blur-3xl" />
       </div>
 
-      {/* content wrapper */}
+    
       <div className="relative z-10 flex w-full max-w-md flex-col items-stretch px-4">
-        {/* Back button */}
+       
         <div className="mb-4">
           <Link
             href="/"
@@ -34,9 +34,9 @@ export default function LoginPage() {
           </Link>
         </div>
 
-        {/* Card */}
+   
         <div className="rounded-[40px] bg-[#190c20]/95 px-10 py-10 shadow-[0_30px_80px_rgba(0,0,0,0.7)]">
-          {/* Logo */}
+    
           <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-pink-500">
             <span className="text-2xl">📈</span>
           </div>
@@ -55,7 +55,7 @@ export default function LoginPage() {
             followers.
           </p>
 
-          {/* Google button */}
+        
           <button
             onClick={handleGoogleLogin}
             className="mt-8 flex w-full items-center justify-center gap-3 rounded-full bg-white py-3 text-sm font-medium text-[#202124] shadow-[0_10px_30px_rgba(0,0,0,0.4)] hover:bg-neutral-100"
@@ -87,10 +87,9 @@ export default function LoginPage() {
             <span>Continue with Google</span>
           </button>
 
-          {/* Divider */}
           <div className="mt-8 border-t border-white/10" />
 
-          {/* Community stats */}
+          
           <div className="mt-4 text-center text-[10px] font-semibold tracking-[0.2em] text-white/40">
             COMMUNITY STATS
           </div>
@@ -110,7 +109,7 @@ export default function LoginPage() {
             </div>
           </div>
 
-          {/* Terms */}
+          
           <p className="mt-6 text-center text-[10px] leading-relaxed text-white/40">
             By continuing, you agree to our{" "}
             <span className="underline">Terms of Service</span> and{" "}

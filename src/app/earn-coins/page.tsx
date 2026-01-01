@@ -62,13 +62,13 @@ export default function EarnCoinsPage() {
     }
   }, []);
 
-  // save completed tasks to localStorage
+
   useEffect(() => {
     if (typeof window === "undefined") return;
     localStorage.setItem("completedTasks", JSON.stringify(completed));
   }, [completed]);
 
-  // fetch tasks from API (only active ones per your /api/tasks)
+
   useEffect(() => {
     const fetchTasks = async () => {
       try {
@@ -116,10 +116,10 @@ export default function EarnCoinsPage() {
         return;
       }
 
-      // mark as completed locally (card stays visible but disabled)
+
       setCompleted((prev) => ({ ...prev, [taskId]: true }));
 
-      // refresh page data (e.g. coins in navbar)
+     
       router.refresh();
     } catch (e) {
       console.error("Verify request failed:", e);
@@ -134,7 +134,8 @@ export default function EarnCoinsPage() {
         <DashboardNavbar />
 
         <div className="mx-auto max-w-6xl px-4 py-10 md:px-8">
-          {/* Heading */}
+   
+   
           <header className="grid gap-4 md:grid-cols-[minmax(0,1.5fr)_auto] md:items-center">
             <div className="ml-0 md:ml-6">
               <h1 className="text-3xl font-semibold md:text-4xl">
@@ -159,7 +160,7 @@ export default function EarnCoinsPage() {
             </div>
           </header>
 
-          {/* Cards grid */}
+
           <section className="mt-10 grid gap-6 md:grid-cols-4 lg:grid-cols-4">
             {/* If loading */}
             {loading && (

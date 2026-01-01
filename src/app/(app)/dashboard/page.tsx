@@ -2,34 +2,30 @@
 
 import DashboardNavbar from "@/src/components/DashboardNavbar";
 import {
-  LogOut,
-  Rocket,
+    Rocket,
   TrendingUp,
   DollarSign,
   Megaphone,
   Users,
   Target,
 } from "lucide-react";
-import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 
 
 
 export default function DashboardPage() {
-  const router = useRouter();
-  const { data: session, status } = useSession();
+  const { data: session } = useSession();
   const name = session?.user?.name || "User";
   return (
     <main className="min-h-screen bg-[#120814] text-white">
-      {/* Top nav */}
+     
       
 <DashboardNavbar />
 
-      {/* Main content */}
       <div className="mx-auto max-w-5xl px-4 py-10 md:px-6">
-        {/* Welcome */}
+        
         <section className="mx-auto max-w-5xl px-4 py-10 md:px-6">
-          {/* Heading */}
+        
           <div className="text-center">
             <h1 className="text-3xl font-semibold md:text-4xl">
               Welcome back, {name}!
@@ -39,7 +35,7 @@ export default function DashboardPage() {
             </p>
           </div>
 
-          {/* Cards */}
+
           <div className="mt-10 grid gap-8 md:grid-cols-2">
             {/* Earn Coins */}
             <div className="relative overflow-hidden rounded-[40px] bg-[#1b0d24] px-10 py-10 shadow-[0_25px_80px_rgba(0,0,0,0.7)]">

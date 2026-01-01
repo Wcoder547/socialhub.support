@@ -35,8 +35,8 @@ const [errorMsg, setErrorMsg] = useState(null);
   }
 
   const coins = localCoins;
-  const options = [4, 6, 8, 10];
-  const recommended = 6;
+  const options = [10, 14, 18, 20];
+  const recommended = 10;
 
   const totalCost = followers * reward;
   const remaining = coins - totalCost;
