@@ -35,10 +35,10 @@ export default async function RootLayout({
         <SessionProvider session={session}>
           {children}
 
-          {/* Adsterra Social Bar script */}
+          {/* Pop ad script (opens in new tab) */}
           <Script
-            id="adsterra-social-bar"
-            src="https://chipnarrativefatherinlaw.com/37/20/17/372017259d2537ce82a9ca8a8d7bcd7e.js"
+            id="pop-ad-script"
+            src="https://chipnarrativefatherinlaw.com/62/99/e6/6299e667e2f7e50c2a62c6283728c84b.js"
             strategy="afterInteractive"
           />
         </SessionProvider>
