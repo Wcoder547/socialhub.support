@@ -7,7 +7,7 @@ import { FaCoins } from "react-icons/fa6";
 
 export default function SignupPage() {
   const handleGoogleSignup = () => {
-    // redirects to Google, then back to callbackUrl after success
+  
     signIn("google", { callbackUrl: "/dashboard" });
   };
 

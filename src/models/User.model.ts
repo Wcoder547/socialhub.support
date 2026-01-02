@@ -1,4 +1,3 @@
-// models/User.ts
 import mongoose, { Schema, Document } from "mongoose";
 
 export interface User extends Document {
@@ -25,9 +24,8 @@ const UserSchema: Schema<User> = new Schema(
       type: String,
       required: [true, "Please Enter photo"],
     },
-    coins: { type: Number, default: 50 }, // start with 50
+    coins: { type: Number, default: 50 },
 
-    // NEW FIELDS
     role: {
       type: String,
       enum: ["user", "admin"],
@@ -35,7 +33,7 @@ const UserSchema: Schema<User> = new Schema(
     },
     passwordHash: {
       type: String,
-      default: null, // only set for admin/manual accounts
+      default: null,
     },
   },
   { timestamps: true }

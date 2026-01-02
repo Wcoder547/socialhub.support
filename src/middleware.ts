@@ -10,7 +10,6 @@ const ADMIN_COOKIE_NAME = "admin_token";
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-
   const token = await getToken({
     req,
     secret: process.env.NEXTAUTH_SECRET,
@@ -32,11 +31,9 @@ export async function middleware(req: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-
   if (pathname.startsWith("/admin")) {
     const adminToken = req.cookies.get(ADMIN_COOKIE_NAME)?.value;
 
-    // no admin cookie: allow only /admin/login
     if (!adminToken) {
       if (pathname === "/admin/login") {
         return NextResponse.next();

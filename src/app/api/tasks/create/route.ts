@@ -19,6 +19,7 @@ export async function POST(req: Request) {
     if (!tiktokLink || !followers || !reward) {
       return NextResponse.json({ error: "Missing fields" }, { status: 400 });
     }
+
     const doubledReward = reward * 2;
     const totalCost = followers * reward;
 
@@ -27,6 +28,21 @@ export async function POST(req: Request) {
 
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    const existing = await TaskModel.findOne({
+      userId: user._id.toString(),
+      status: { $in: ["pending", "active"] },
+    });
+
+    if (existing) {
+      return NextResponse.json(
+        {
+          error:
+            "You already have a running campaign. Please wait until it is completed before creating a new one.",
+        },
+        { status: 400 }
+      );
     }
 
     if (user.coins < totalCost) {
@@ -43,9 +59,12 @@ export async function POST(req: Request) {
       userId: user._id.toString(),
       tiktokLink,
       followers,
+      completedFollowers: 0,
       rewardPerFollower: doubledReward,
       totalCost,
       status: "pending",
+      createdByRole: "user",
+      priority: 0,
     });
 
     return NextResponse.json(

@@ -25,7 +25,7 @@ export async function GET() {
     const tasks = await TaskModel.find({
       status: "active",
     })
-      .sort({ priority: -1, createdAt: -1 }) // high priority first
+      .sort({ priority: -1, createdAt: -1 })
       .lean();
 
     const tasksWithUser = await Promise.all(

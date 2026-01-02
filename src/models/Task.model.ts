@@ -4,6 +4,7 @@ export interface ITask extends Document {
   userId: string;
   tiktokLink: string;
   followers: number;
+  completedFollowers: number;
   rewardPerFollower: number;
   totalCost: number;
   status: "pending" | "active" | "completed" | "cancelled";
@@ -18,6 +19,7 @@ const TaskSchema = new Schema<ITask>(
     userId: { type: String, required: true },
     tiktokLink: { type: String, required: true },
     followers: { type: Number, required: true },
+    completedFollowers: { type: Number, default: 0 }, // NEW FIELD
     rewardPerFollower: { type: Number, required: true },
     totalCost: { type: Number, required: true },
     status: {
@@ -32,7 +34,7 @@ const TaskSchema = new Schema<ITask>(
     },
     priority: {
       type: Number,
-      default: 0, // admin tasks: 100
+      default: 0,
     },
   },
   { timestamps: true }

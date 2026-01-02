@@ -50,7 +50,6 @@ export const authOptions: NextAuthOptions = {
         const dbUser = await UserModel.findOne({
           email: session.user.email,
         }).lean();
-        console.log("SESSION CALLBACK dbUser:", dbUser);
 
         if (dbUser) {
           (session.user as any).id = dbUser._id.toString();

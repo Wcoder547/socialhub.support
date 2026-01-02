@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
-import { authOptions } from "../../../../lib/auth-options"; // adjust path if needed
-import { dbConnect } from "../../../..//lib/dbConnect";
+import { authOptions } from "../../../../lib/auth-options";
+import { dbConnect } from "../../../../lib/dbConnect";
 import UserModel from "../../../../models/User.model";
 import TaskModel from "../../../../models/Task.model";
 
@@ -30,15 +30,29 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Task not found" }, { status: 404 });
     }
 
+    // 1) give coins
     const reward = task.rewardPerFollower;
     user.coins = (user.coins || 0) + reward;
     await user.save();
+
+    const currentCompleted = task.completedFollowers || 0;
+    const newCompleted = currentCompleted + 1;
+    task.completedFollowers = newCompleted;
+
+    if (newCompleted >= task.followers) {
+      await task.deleteOne();
+    } else {
+      await task.save();
+    }
 
     return NextResponse.json(
       {
         ok: true,
         addedCoins: reward,
         newBalance: user.coins,
+        completedFollowers: newCompleted,
+        targetFollowers: task.followers,
+        deleted: newCompleted >= task.followers,
       },
       { status: 200 }
     );

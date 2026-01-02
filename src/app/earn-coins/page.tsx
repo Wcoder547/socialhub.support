@@ -39,7 +39,10 @@ export default function EarnCoinsPage() {
   const [completed, setCompleted] = useState<Record<string, boolean>>({});
   const [verifying, setVerifying] = useState<Record<string, boolean>>({});
 
-  // load completed tasks from localStorage (per user & browser)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+
+  
   useEffect(() => {
     if (typeof window === "undefined") return;
 
@@ -62,13 +65,13 @@ export default function EarnCoinsPage() {
     }
   }, []);
 
-
+  
   useEffect(() => {
     if (typeof window === "undefined") return;
     localStorage.setItem("completedTasks", JSON.stringify(completed));
   }, [completed]);
 
-
+  // load tasks
   useEffect(() => {
     const fetchTasks = async () => {
       try {
@@ -92,6 +95,7 @@ export default function EarnCoinsPage() {
 
   const hasTasks = tasks.length > 0;
 
+  
   const handleVerify = async (taskId: string) => {
     if (!canVerify[taskId] || verifying[taskId]) return;
 
@@ -104,7 +108,7 @@ export default function EarnCoinsPage() {
       });
 
       const text = await res.text();
-      let data: any = null;
+      let data= null;
       try {
         data = text ? JSON.parse(text) : null;
       } catch (e) {
@@ -116,10 +120,7 @@ export default function EarnCoinsPage() {
         return;
       }
 
-
       setCompleted((prev) => ({ ...prev, [taskId]: true }));
-
-     
       router.refresh();
     } catch (e) {
       console.error("Verify request failed:", e);
@@ -128,14 +129,67 @@ export default function EarnCoinsPage() {
     }
   };
 
+  
+  const handleOpenProfile = async (task: Task) => {
+    try {
+      const res = await fetch("/api/tasks/open", { method: "POST" });
+
+      if (!res.ok) {
+  const data = await res.json().catch(() => null);
+  setErrorMessage(
+    data?.error ||
+      "You've hit today's limit for opening TikTok profiles. Please try again tomorrow."
+  );
+  return;
+}
+
+
+      // allowed -> keep your old logic
+      setHighlighted(task._id);
+      setCanVerify((prev) => ({
+        ...prev,
+        [task._id]: false,
+      }));
+      setTimeout(() => {
+        setCanVerify((prev) => ({
+          ...prev,
+          [task._id]: true,
+        }));
+      }, 15000);
+
+      window.open(task.tiktokLink, "_blank", "noopener");
+    } catch (e) {
+      console.error("Open profile error:", e);
+      alert("Something went wrong. Please try again.");
+    }
+  };
+
   return (
     <>
       <main className="min-h-screen bg-[#120814] text-white">
+      
+
         <DashboardNavbar />
 
         <div className="mx-auto max-w-6xl px-4 py-10 md:px-8">
-   
-   
+ {errorMessage && (
+  <div className="fixed inset-x-0 bottom-4 z-50 flex justify-center px-4">
+    <div className="flex max-w-sm items-center gap-2 rounded-full bg-[#1b0d24] px-4 py-2 text-xs text-pink-50 shadow-[0_18px_45px_rgba(0,0,0,0.7)] border border-pink-500/40">
+      <span className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-pink-500 text-[10px] font-bold">
+        !
+      </span>
+      <span className="flex-1">{errorMessage}</span>
+      <button
+        onClick={() => setErrorMessage(null)}
+        className="text-[10px] text-pink-200 hover:text-pink-100"
+      >
+        Close
+      </button>
+    </div>
+  </div>
+)}
+
+
           <header className="grid gap-4 md:grid-cols-[minmax(0,1.5fr)_auto] md:items-center">
             <div className="ml-0 md:ml-6">
               <h1 className="text-3xl font-semibold md:text-4xl">
@@ -160,16 +214,15 @@ export default function EarnCoinsPage() {
             </div>
           </header>
 
-
           <section className="mt-10 grid gap-6 md:grid-cols-4 lg:grid-cols-4">
-            {/* If loading */}
+            {/* Loading */}
             {loading && (
               <div className="col-span-4 text-center text-sm text-white/60">
                 Loading tasks...
               </div>
             )}
 
-            {/* Real tasks from DB */}
+            {/* Real tasks */}
             {hasTasks &&
               tasks.map((task) => {
                 const isHighlighted = highlighted === task._id;
@@ -184,7 +237,7 @@ export default function EarnCoinsPage() {
                       isCompleted ? "bg-[#140b1a] opacity-60" : "bg-[#1b0d24]"
                     }`}
                   >
-                    {/* coins badge (reward per follower) */}
+                    {/* coins badge */}
                     <div className="absolute right-4 top-4 rounded-full bg-pink-500 px-3 py-1 text-[10px] font-semibold">
                       +{task.rewardPerFollower} Coins / follow
                     </div>
@@ -211,7 +264,7 @@ export default function EarnCoinsPage() {
                       )}
                     </div>
 
-                    {/* handle & category */}
+                    {/* handle & target */}
                     <div className="text-center">
                       <div className="text-sm font-semibold">
                         TikTok Campaign
@@ -228,19 +281,7 @@ export default function EarnCoinsPage() {
                         disabled={isCompleted}
                         onClick={() => {
                           if (isCompleted) return;
-                          setHighlighted(task._id);
-                          // start 15s timer to enable verify
-                          setCanVerify((prev) => ({
-                            ...prev,
-                            [task._id]: false,
-                          }));
-                          setTimeout(() => {
-                            setCanVerify((prev) => ({
-                              ...prev,
-                              [task._id]: true,
-                            }));
-                          }, 15000);
-                          window.open(task.tiktokLink, "_blank", "noopener");
+                          handleOpenProfile(task);
                         }}
                         className={`flex w-full items-center justify-center gap-2 rounded-full px-4 py-2 text-xs font-semibold ${
                           isCompleted
@@ -314,7 +355,7 @@ export default function EarnCoinsPage() {
                 );
               })}
 
-            {/* Fallback static card if no tasks */}
+            {/* Fallback static card */}
             {!loading &&
               !hasTasks &&
               fallbackProfiles.map((p) => {
