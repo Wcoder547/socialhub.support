@@ -16,6 +16,8 @@ interface Task {
   status: string;
   userPhoto?: string | null;
   userName?: string | null;
+  createdByRole?: "admin" | "user";
+  createdAt?: string;
 }
 
 const fallbackProfiles = [
@@ -27,6 +29,8 @@ const fallbackProfiles = [
     avatar: "/avatars/sarah.jpg",
   },
 ];
+
+const PAGE_SIZE = 100;
 
 export default function EarnCoinsPage() {
   const router = useRouter();
@@ -40,9 +44,12 @@ export default function EarnCoinsPage() {
   const [verifying, setVerifying] = useState<Record<string, boolean>>({});
 
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
 
+  const [tab, setTab] = useState<"high" | "newest" | "all">("high");
+  const [page, setPage] = useState(1);
 
-  
+  // load completed tasks from localStorage (per user & browser)
   useEffect(() => {
     if (typeof window === "undefined") return;
 
@@ -65,7 +72,7 @@ export default function EarnCoinsPage() {
     }
   }, []);
 
-  
+  // persist completed -> localStorage
   useEffect(() => {
     if (typeof window === "undefined") return;
     localStorage.setItem("completedTasks", JSON.stringify(completed));
@@ -95,7 +102,57 @@ export default function EarnCoinsPage() {
 
   const hasTasks = tasks.length > 0;
 
-  
+  // --- filtering & sorting pipeline ---
+
+  // 1) filter by tab
+  let tabFiltered = tasks;
+
+  if (tab === "high") {
+    // only admin campaigns
+    tabFiltered = tasks.filter((t) => t.createdByRole === "admin");
+  } else if (tab === "newest") {
+    // tasks from last 2 hours (admin + user)
+    const twoHoursAgo = Date.now() - 2 * 60 * 60 * 1000;
+    tabFiltered = tasks.filter((t) => {
+      if (!t.createdAt) return false;
+      const created = new Date(t.createdAt).getTime();
+      return created >= twoHoursAgo;
+    });
+  }
+  // tab === "all" => no role filter, user + admin both
+
+  // 2) search by userName
+  const searchFiltered = tabFiltered.filter((task) => {
+    if (!search.trim()) return true;
+    const name = task.userName || "";
+    return name.toLowerCase().includes(search.trim().toLowerCase());
+  });
+
+  // 3) sort newest‑first
+  const sortedTasks = [...searchFiltered].sort((a, b) => {
+    const da = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+    const db = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+    return db - da;
+  });
+
+  // 4) pagination
+  const totalPages = Math.max(1, Math.ceil(sortedTasks.length / PAGE_SIZE));
+  const currentPage = Math.min(page, totalPages);
+  const startIndex = (currentPage - 1) * PAGE_SIZE;
+  const paginatedTasks = sortedTasks.slice(
+    startIndex,
+    startIndex + PAGE_SIZE
+  );
+
+  // reset page when tab/search change
+  useEffect(() => {
+    setPage(1);
+  }, [tab, search]);
+
+  // totals (for header)
+  const totalActiveCampaigns = sortedTasks.length;
+  const totalCompletedByUser = Object.values(completed).filter(Boolean).length;
+
   const handleVerify = async (taskId: string) => {
     if (!canVerify[taskId] || verifying[taskId]) return;
 
@@ -108,7 +165,7 @@ export default function EarnCoinsPage() {
       });
 
       const text = await res.text();
-      let data= null;
+      let data = null;
       try {
         data = text ? JSON.parse(text) : null;
       } catch (e) {
@@ -129,22 +186,19 @@ export default function EarnCoinsPage() {
     }
   };
 
-  
   const handleOpenProfile = async (task: Task) => {
     try {
       const res = await fetch("/api/tasks/open", { method: "POST" });
 
       if (!res.ok) {
-  const data = await res.json().catch(() => null);
-  setErrorMessage(
-    data?.error ||
-      "You've hit today's limit for opening TikTok profiles. Please try again tomorrow."
-  );
-  return;
-}
+        const data = await res.json().catch(() => null);
+        setErrorMessage(
+          data?.error ||
+            "You've hit today's limit for opening TikTok profiles. Please try again tomorrow."
+        );
+        return;
+      }
 
-
-      // allowed -> keep your old logic
       setHighlighted(task._id);
       setCanVerify((prev) => ({
         ...prev,
@@ -167,28 +221,25 @@ export default function EarnCoinsPage() {
   return (
     <>
       <main className="min-h-screen bg-[#120814] text-white">
-      
-
         <DashboardNavbar />
 
         <div className="mx-auto max-w-6xl px-4 py-10 md:px-8">
- {errorMessage && (
-  <div className="fixed inset-x-0 bottom-4 z-50 flex justify-center px-4">
-    <div className="flex max-w-sm items-center gap-2 rounded-full bg-[#1b0d24] px-4 py-2 text-xs text-pink-50 shadow-[0_18px_45px_rgba(0,0,0,0.7)] border border-pink-500/40">
-      <span className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-pink-500 text-[10px] font-bold">
-        !
-      </span>
-      <span className="flex-1">{errorMessage}</span>
-      <button
-        onClick={() => setErrorMessage(null)}
-        className="text-[10px] text-pink-200 hover:text-pink-100"
-      >
-        Close
-      </button>
-    </div>
-  </div>
-)}
-
+          {errorMessage && (
+            <div className="fixed inset-x-0 bottom-4 z-50 flex justify-center px-4">
+              <div className="flex max-w-sm items-center gap-2 rounded-full bg-[#1b0d24] px-4 py-2 text-xs text-pink-50 shadow-[0_18px_45px_rgba(0,0,0,0.7)] border border-pink-500/40">
+                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-pink-500 text-[10px] font-bold">
+                  !
+                </span>
+                <span className="flex-1">{errorMessage}</span>
+                <button
+                  onClick={() => setErrorMessage(null)}
+                  className="text-[10px] text-pink-200 hover:text-pink-100"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          )}
 
           <header className="grid gap-4 md:grid-cols-[minmax(0,1.5fr)_auto] md:items-center">
             <div className="ml-0 md:ml-6">
@@ -199,32 +250,85 @@ export default function EarnCoinsPage() {
                 Complete tasks below to stack up your balance. Follow creators
                 and verify to earn instantly.
               </p>
+
+              {/* totals row */}
+              <div className="mt-4 flex flex-wrap items-center gap-3 text-[11px] text-white/70">
+                <div className="rounded-full bg-[#1b0d24] px-3 py-1 border border-white/10">
+                  Total Active Campaigns:{" "}
+                  <span className="font-semibold text-pink-400">
+                    {totalActiveCampaigns}
+                  </span>
+                </div>
+                <div className="rounded-full bg-[#1b0d24] px-3 py-1 border border-white/10">
+                  Your Completed Campaigns:{" "}
+                  <span className="font-semibold text-green-400">
+                    {totalCompletedByUser}
+                  </span>
+                </div>
+              </div>
             </div>
 
-            <div className="flex flex-wrap items-center justify-start gap-2 text-xs md:justify-end">
-              <button className="rounded-full bg-pink-500 px-4 py-2 font-semibold text-white shadow-[0_10px_30px_rgba(255,0,122,0.5)]">
-                High Reward
-              </button>
-              <button className="rounded-full bg-[#261027] px-4 py-2 text-white/70 hover:bg-[#311336]">
-                Newest
-              </button>
-              <button className="rounded-full bg-[#261027] px-4 py-2 text-white/70 hover:bg-[#311336]">
-                Trending
-              </button>
+            <div className="flex flex-col items-stretch gap-3 md:items-end">
+              {/* search bar */}
+              <div className="w-full md:w-72">
+                <input
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Search your campaign by name..."
+                  className="w-full rounded-full border border_white/10 bg-[#1b0d24]/80 px-4 py-2 text-xs text-white placeholder:text-white/40 outline-none ring-0 focus:border-pink-500 focus:bg-[#1b0d24]"
+                />
+                <p className="mt-1 text-[10px] text-white/40">
+                  Type the name on your campaign to confirm it’s listed.
+                </p>
+              </div>
+
+              {/* tabs */}
+              <div className="flex flex-wrap items-center justify-start gap-2 text-xs md:justify-end">
+                <button
+                  onClick={() => setTab("high")}
+                  className={`rounded-full px-4 py-2 font-semibold shadow-[0_10px_30px_rgba(255,0,122,0.5)] ${
+                    tab === "high"
+                      ? "bg-pink-500 text-white"
+                      : "bg-[#261027] text-white/70 hover:bg-[#311336]"
+                  }`}
+                >
+                  High Reward
+                </button>
+                <button
+                  onClick={() => setTab("newest")}
+                  className={`rounded-full px-4 py-2 ${
+                    tab === "newest"
+                      ? "bg-pink-500 text-white"
+                      : "bg-[#261027] text-white/70 hover:bg-[#311336]"
+                  }`}
+                >
+                  Newest (last 2h)
+                </button>
+                <button
+                  onClick={() => setTab("all")}
+                  className={`rounded-full px-4 py-2 ${
+                    tab === "all"
+                      ? "bg-pink-500 text-white"
+                      : "bg-[#261027] text-white/70 hover:bg-[#311336]"
+                  }`}
+                >
+                  All
+                </button>
+              </div>
             </div>
           </header>
 
           <section className="mt-10 grid gap-6 md:grid-cols-4 lg:grid-cols-4">
             {/* Loading */}
             {loading && (
-              <div className="col-span-4 text-center text-sm text-white/60">
+              <div className="col-span-4 text-center text-sm text_white/60">
                 Loading tasks...
               </div>
             )}
 
-            {/* Real tasks */}
+            {/* Real tasks (filtered + paginated) */}
             {hasTasks &&
-              tasks.map((task) => {
+              paginatedTasks.map((task) => {
                 const isHighlighted = highlighted === task._id;
                 const canV = !!canVerify[task._id];
                 const isVerifying = !!verifying[task._id];
@@ -272,6 +376,11 @@ export default function EarnCoinsPage() {
                       <div className="mt-1 text-[11px] text-white/60">
                         Target: {task.followers} followers
                       </div>
+                      {task.userName && (
+                        <div className="mt-1 text-[11px] text-white/50">
+                          By: {task.userName}
+                        </div>
+                      )}
                     </div>
 
                     {/* actions */}
@@ -425,6 +534,37 @@ export default function EarnCoinsPage() {
                 );
               })}
           </section>
+
+          {/* pagination controls */}
+          {sortedTasks.length > PAGE_SIZE && (
+            <div className="mt-8 flex items-center justify-center gap-4 text-xs text-white/70">
+              <button
+                disabled={currentPage <= 1}
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                className={`rounded-full px-4 py-2 ${
+                  currentPage <= 1
+                    ? "bg-[#1b0d24] text-white/30 cursor-not-allowed"
+                    : "bg-[#241027] hover:bg-[#2d1231]"
+                }`}
+              >
+                Previous
+              </button>
+              <span>
+                Page {currentPage} of {totalPages}
+              </span>
+              <button
+                disabled={currentPage >= totalPages}
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                className={`rounded-full px-4 py-2 ${
+                  currentPage >= totalPages
+                    ? "bg-[#1b0d24] text-white/30 cursor-not-allowed"
+                    : "bg-[#241027] hover:bg-[#2d1231]"
+                }`}
+              >
+                Next
+              </button>
+            </div>
+          )}
         </div>
       </main>
       <Footer />
