@@ -41,6 +41,8 @@ const PAGE_SIZE = 8;
 export default function AdminProofsPage() {
   const router = useRouter();
 
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
   const [proofTasks, setProofTasks] = useState<ProofTask[]>([]);
   const [loadingProofs, setLoadingProofs] = useState(true);
   const [proofError, setProofError] = useState<string | null>(null);
@@ -120,10 +122,7 @@ export default function AdminProofsPage() {
     }
   };
 
-  const totalPages = Math.max(
-    1,
-    Math.ceil(proofTasks.length / PAGE_SIZE)
-  );
+  const totalPages = Math.max(1, Math.ceil(proofTasks.length / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
   const startIndex = (currentPage - 1) * PAGE_SIZE;
   const paginatedProofs = proofTasks.slice(
@@ -134,22 +133,41 @@ export default function AdminProofsPage() {
   return (
     <main className="min-h-screen bg-[#08030c] text-white flex">
       {/* Sidebar */}
-      <aside className="hidden md:flex w-64 flex-col border-r border-white/10 bg-[#120814]">
-        <div className="px-6 py-5 border-b border-white/10 flex items-center gap-2">
-          <div className="h-8 w-8 rounded-2xl bg-pink-500 flex items-center justify-center text-xs font-bold shadow-[0_10px_30px_rgba(255,0,122,0.7)]">
-            <ShieldCheck className="h-4 w-4" />
+      <aside
+        className={`
+          fixed inset-y-0 left-0 z-40 w-64 flex flex-col border-r border-white/10 bg-[#120814]
+          transform transition-transform duration-200
+          ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"}
+          md:static md:translate-x-0
+        `}
+      >
+        <div className="px-6 py-5 border-b border-white/10 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <div className="h-8 w-8 rounded-2xl bg-pink-500 flex items-center justify-center text-xs font-bold shadow-[0_10px_30px_rgba(255,0,122,0.7)]">
+              <ShieldCheck className="h-4 w-4" />
+            </div>
+            <div>
+              <h1 className="text-lg font-semibold">Follower Admin</h1>
+              <p className="mt-1 text-[11px] text-white/60">
+                Review proofs, control campaigns.
+              </p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-lg font-semibold">Follower Admin</h1>
-            <p className="mt-1 text-[11px] text-white/60">
-              Review proofs, control campaigns.
-            </p>
-          </div>
+
+          <button
+            className="md:hidden text-white/60 text-xs px-2 py-1 rounded-full hover:bg-white/10"
+            onClick={() => setIsSidebarOpen(false)}
+          >
+            Close
+          </button>
         </div>
 
         <nav className="flex-1 px-4 py-4 text-sm space-y-2">
           <button
-            onClick={() => router.push("/admin/dashboard")}
+            onClick={() => {
+              setIsSidebarOpen(false);
+              router.push("/admin/dashboard");
+            }}
             className="w-full rounded-xl bg-transparent px-3 py-2 text-left text-white/70 hover:bg-[#241027]"
           >
             Dashboard
@@ -157,12 +175,7 @@ export default function AdminProofsPage() {
           <button className="w-full rounded-xl bg-[#241027] px-3 py-2 text-left font-semibold text-white shadow-[0_10px_30px_rgba(0,0,0,0.6)]">
             Review Proofs
           </button>
-          <button
-            onClick={() => router.push("/earn-coins")}
-            className="w-full rounded-xl bg-transparent px-3 py-2 text-left text-white/70 hover:bg-[#241027]"
-          >
-            View Earn Coins
-          </button>
+
         </nav>
 
         <div className="px-4 pb-4 text-[11px] text-white/40 space-y-1">
@@ -171,17 +184,38 @@ export default function AdminProofsPage() {
         </div>
       </aside>
 
+      {/* Overlay on mobile */}
+      {isSidebarOpen && (
+        <div
+          className="fixed inset-0 z-30 bg-black/60 md:hidden"
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      )}
+
       {/* Main content */}
       <section className="flex-1">
         {/* Top bar */}
         <header className="border-b border-white/10 bg-[#14071b]/80 backdrop-blur">
           <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4 md:px-8">
-            <div>
-              <h2 className="text-lg font-semibold">Review Proofs</h2>
-              <p className="text-xs text-white/60">
-                See all pending screenshots and approve or reject them.
-              </p>
+            <div className="flex items-center gap-3">
+              {/* mobile sidebar button */}
+              <button
+                className="md:hidden rounded-full bg-[#241027] p-2 text-white/80 hover:bg-[#311336]"
+                onClick={() => setIsSidebarOpen(true)}
+              >
+                <span className="block h-0.5 w-4 bg-white mb-1" />
+                <span className="block h-0.5 w-4 bg-white mb-1" />
+                <span className="block h-0.5 w-4 bg-white" />
+              </button>
+
+              <div>
+                <h2 className="text-lg font-semibold">Review Proofs</h2>
+                <p className="text-xs text-white/60">
+                  See all pending screenshots and approve or reject them.
+                </p>
+              </div>
             </div>
+
             <button
               onClick={fetchProofTasks}
               className="rounded-full bg-pink-500 px-4 py-2 text-xs font-semibold text-white shadow-[0_10px_30px_rgba(255,0,122,0.6)] hover:bg-pink-600 flex items-center gap-2"
@@ -291,7 +325,9 @@ export default function AdminProofsPage() {
                             }`}
                           >
                             <CheckCircle2 className="h-3 w-3" />
-                            {isProcessing ? "Processing..." : "Approve & credit"}
+                            {isProcessing
+                              ? "Processing..."
+                              : "Approve & credit"}
                           </button>
                           <button
                             disabled={isProcessing}
