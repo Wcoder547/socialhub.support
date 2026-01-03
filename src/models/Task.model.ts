@@ -1,44 +1,45 @@
-import { Schema, Document, models, model } from "mongoose";
+// models/Task.model.ts
+import mongoose, { Schema, Document } from "mongoose";
 
-export interface ITask extends Document {
-  userId: string;
+interface TaskDoc extends Document {
+  userId: string; // owner who created campaign
   tiktokLink: string;
   followers: number;
   completedFollowers: number;
   rewardPerFollower: number;
   totalCost: number;
-  status: "pending" | "active" | "completed" | "cancelled";
+  status: string;
   createdByRole: "admin" | "user";
-  priority: number;
-  createdAt: Date;
-  updatedAt: Date;
+  proofScreenshotUrl?: string | null;
+  proofStatus?: "pending" | "approved" | "rejected" | null;
+  proofSubmittedBy?: mongoose.Types.ObjectId | null; // <- add this
 }
 
-const TaskSchema = new Schema<ITask>(
+const TaskSchema = new Schema<TaskDoc>(
   {
     userId: { type: String, required: true },
     tiktokLink: { type: String, required: true },
     followers: { type: Number, required: true },
-    completedFollowers: { type: Number, default: 0 }, // NEW FIELD
+    completedFollowers: { type: Number, default: 0 },
     rewardPerFollower: { type: Number, required: true },
     totalCost: { type: Number, required: true },
-    status: {
+    status: { type: String, default: "active" },
+    createdByRole: { type: String, enum: ["admin", "user"], default: "user" },
+
+    proofScreenshotUrl: { type: String, default: null },
+    proofStatus: {
       type: String,
-      enum: ["pending", "active", "completed", "cancelled"],
-      default: "pending",
+      enum: ["pending", "approved", "rejected", null],
+      default: null,
     },
-    createdByRole: {
-      type: String,
-      enum: ["admin", "user"],
-      default: "user",
-    },
-    priority: {
-      type: Number,
-      default: 0,
+    proofSubmittedBy: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
     },
   },
   { timestamps: true }
 );
 
-const TaskModel = models.Task || model<ITask>("Task", TaskSchema);
-export default TaskModel;
+export default mongoose.models.Task ||
+  mongoose.model<TaskDoc>("Task", TaskSchema);

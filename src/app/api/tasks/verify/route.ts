@@ -1,9 +1,12 @@
+// src/app/api/tasks/verify/route.ts
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
-import { authOptions } from "../../../../lib/auth-options";
-import { dbConnect } from "../../../../lib/dbConnect";
-import UserModel from "../../../../models/User.model";
-import TaskModel from "../../../../models/Task.model";
+import { authOptions } from "@/src/lib/auth-options";
+import { dbConnect } from "@/src/lib/dbConnect";
+import UserModel from "@/src/models/User.model";
+import TaskModel from "@/src/models/Task.model";
+
+export const runtime = "nodejs";
 
 export async function POST(req: Request) {
   try {
@@ -13,9 +16,12 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
 
-    const { taskId } = await req.json();
-    if (!taskId) {
-      return NextResponse.json({ error: "Missing taskId" }, { status: 400 });
+    const { taskId, screenshotUrl } = await req.json();
+    if (!taskId || !screenshotUrl) {
+      return NextResponse.json(
+        { error: "Missing taskId or screenshotUrl" },
+        { status: 400 }
+      );
     }
 
     await dbConnect();
@@ -30,29 +36,19 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Task not found" }, { status: 404 });
     }
 
-    // 1) give coins
-    const reward = task.rewardPerFollower;
-    user.coins = (user.coins || 0) + reward;
-    await user.save();
+    // store proof + WHO submitted it (the worker)
+    task.proofScreenshotUrl = screenshotUrl;
+    task.proofStatus = "pending";
 
-    const currentCompleted = task.completedFollowers || 0;
-    const newCompleted = currentCompleted + 1;
-    task.completedFollowers = newCompleted;
+    // make sure your Task schema has: proofSubmittedBy: { type: Schema.Types.ObjectId, ref: "User", default: null }
+    task.proofSubmittedBy = user._id;
 
-    if (newCompleted >= task.followers) {
-      await task.deleteOne();
-    } else {
-      await task.save();
-    }
+    await task.save();
 
     return NextResponse.json(
       {
         ok: true,
-        addedCoins: reward,
-        newBalance: user.coins,
-        completedFollowers: newCompleted,
-        targetFollowers: task.followers,
-        deleted: newCompleted >= task.followers,
+        message: "Proof submitted. Waiting for admin approval.",
       },
       { status: 200 }
     );

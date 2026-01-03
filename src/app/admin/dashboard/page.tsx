@@ -2,6 +2,14 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
+import {
+  CheckCircle2,
+  XCircle,
+  ExternalLink,
+  RefreshCw,
+  ShieldCheck,
+} from "lucide-react";
 
 type TaskStatus = "pending" | "active" | "paused" | "completed";
 
@@ -17,13 +25,37 @@ interface Task {
   createdAt: string;
 }
 
+interface ProofTask extends Task {
+  proofScreenshotUrl?: string;
+  proofStatus?: "pending" | "approved" | "rejected";
+  completedFollowers?: number;
+  userId: string;
+  user?: {
+    _id: string;
+    name?: string;
+    email?: string;
+    coins?: number;
+    photo?: string;
+  } | null;
+}
+
 export default function AdminDashboardPage() {
   const router = useRouter();
 
+  // normal tasks
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loadingTasks, setLoadingTasks] = useState(true);
   const [tasksError, setTasksError] = useState<string | null>(null);
 
+  // proofs
+  const [proofTasks, setProofTasks] = useState<ProofTask[]>([]);
+  const [loadingProofs, setLoadingProofs] = useState(true);
+  const [proofError, setProofError] = useState<string | null>(null);
+  const [processingProof, setProcessingProof] = useState<
+    Record<string, boolean>
+  >({});
+
+  // create form
   const [tiktokLink, setTiktokLink] = useState("");
   const [followers, setFollowers] = useState("");
   const [rewardPerFollower, setRewardPerFollower] = useState("");
@@ -35,16 +67,26 @@ export default function AdminDashboardPage() {
     try {
       setLoadingTasks(true);
       setTasksError(null);
+
       const res = await fetch("/api/admin/tasks");
-      const data = await res.json();
-      if (!res.ok) {
-        setTasksError(data.error || "Failed to load tasks");
+      let data: any = null;
+      try {
+        data = await res.json();
+      } catch {
+        setTasksError("Failed to load tasks");
         setTasks([]);
         return;
       }
+
+      if (!res.ok) {
+        setTasksError(data?.error || "Failed to load tasks");
+        setTasks([]);
+        return;
+      }
+
       setTasks(data.tasks || []);
     } catch (err) {
-      console.error(err);
+      console.error("Fetch tasks error:", err);
       setTasksError("Error loading tasks");
       setTasks([]);
     } finally {
@@ -52,8 +94,40 @@ export default function AdminDashboardPage() {
     }
   };
 
+  const fetchProofTasks = async () => {
+    try {
+      setLoadingProofs(true);
+      setProofError(null);
+
+      const res = await fetch("/api/admin/tasks/pending-proofs");
+      let data: any = null;
+      try {
+        data = await res.json();
+      } catch {
+        setProofError("Failed to load pending proofs");
+        setProofTasks([]);
+        return;
+      }
+
+      if (!res.ok) {
+        setProofError(data?.error || "Failed to load pending proofs");
+        setProofTasks([]);
+        return;
+      }
+
+      setProofTasks(data.tasks || []);
+    } catch (err) {
+      console.error("Fetch pending proofs error:", err);
+      setProofError("Error loading pending proofs");
+      setProofTasks([]);
+    } finally {
+      setLoadingProofs(false);
+    }
+  };
+
   useEffect(() => {
     fetchTasks();
+    fetchProofTasks();
   }, []);
 
   const handleStatusChange = async (taskId: string, status: TaskStatus) => {
@@ -63,9 +137,17 @@ export default function AdminDashboardPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ taskId, status }),
       });
-      const data = await res.json();
+
+      let data: any = null;
+      try {
+        data = await res.json();
+      } catch {
+        alert("Failed to update task");
+        return;
+      }
+
       if (!res.ok) {
-        alert(data.error || "Failed to update task");
+        alert(data?.error || "Failed to update task");
         return;
       }
       fetchTasks();
@@ -92,13 +174,20 @@ export default function AdminDashboardPage() {
         }),
       });
 
-      const data = await res.json();
-      if (!res.ok) {
-        setCreateMessage(data.error || "Failed to create task");
+      let data: any = null;
+      try {
+        data = await res.json();
+      } catch {
+        setCreateMessage("Failed to create task");
         return;
       }
 
-      setCreateMessage("High-priority admin task created.");
+      if (!res.ok) {
+        setCreateMessage(data?.error || "Failed to create task");
+        return;
+      }
+
+      setCreateMessage("High‑priority admin task created.");
       setTiktokLink("");
       setFollowers("");
       setRewardPerFollower("");
@@ -112,6 +201,41 @@ export default function AdminDashboardPage() {
     }
   };
 
+  const handleProofAction = async (
+    taskId: string,
+    action: "approve-proof" | "reject-proof"
+  ) => {
+    setProcessingProof((prev) => ({ ...prev, [taskId]: true }));
+    try {
+      const res = await fetch(`/api/admin/tasks/${action}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ taskId }),
+      });
+
+      let data: any = null;
+      try {
+        data = await res.json();
+      } catch {
+        alert(`Failed to ${action}`);
+        return;
+      }
+
+      if (!res.ok) {
+        alert(data?.error || `Failed to ${action}`);
+        return;
+      }
+
+      setProofTasks((prev) => prev.filter((t) => t._id !== taskId));
+      fetchTasks();
+    } catch (err) {
+      console.error(`${action} error`, err);
+      alert(`Failed to ${action}`);
+    } finally {
+      setProcessingProof((prev) => ({ ...prev, [taskId]: false }));
+    }
+  };
+
   const pendingTasks = tasks.filter((t) => t.status === "pending");
   const activeTasks = tasks.filter((t) => t.status === "active");
 
@@ -119,25 +243,34 @@ export default function AdminDashboardPage() {
     <main className="min-h-screen bg-[#08030c] text-white flex">
       {/* Sidebar */}
       <aside className="hidden md:flex w-64 flex-col border-r border-white/10 bg-[#120814]">
-        <div className="px-6 py-5 border-b border-white/10">
-          <h1 className="text-lg font-semibold">Follower Admin</h1>
-          <p className="mt-1 text-[11px] text-white/60">
-            Control tasks & campaigns.
-          </p>
+        <div className="px-6 py-5 border-b border-white/10 flex items-center gap-2">
+          <div className="h-8 w-8 rounded-2xl bg-pink-500 flex items-center justify-center text-xs font-bold shadow-[0_10px_30px_rgba(255,0,122,0.7)]">
+            <ShieldCheck className="h-4 w-4" />
+          </div>
+          <div>
+            <h1 className="text-lg font-semibold">Follower Admin</h1>
+            <p className="mt-1 text-[11px] text-white/60">
+              Review proofs, control campaigns.
+            </p>
+          </div>
         </div>
 
         <nav className="flex-1 px-4 py-4 text-sm space-y-2">
           <button className="w-full rounded-xl bg-[#241027] px-3 py-2 text-left font-semibold text-white shadow-[0_10px_30px_rgba(0,0,0,0.6)]">
             Dashboard
           </button>
+
+          {/* NEW BUTTON */}
           <button
-            onClick={() => router.push("/earn-coins")}
+            onClick={() => router.push("/admin/proofs")}
             className="w-full rounded-xl bg-transparent px-3 py-2 text-left text-white/70 hover:bg-[#241027]">
-            View Earn Coins
+            Review Proofs
           </button>
+
+          
         </nav>
 
-        <div className="px-4 pb-4 text-[11px] text-white/40">
+        <div className="px-4 pb-4 text-[11px] text-white/40 space-y-1">
           <p>No coin limit for admin.</p>
           <p>Use dashboard freely.</p>
         </div>
@@ -151,7 +284,7 @@ export default function AdminDashboardPage() {
             <div>
               <h2 className="text-lg font-semibold">Admin Dashboard</h2>
               <p className="text-xs text-white/60">
-                Approve user tasks and create your own high-priority tasks.
+                Approve user proofs and manage high‑priority campaigns.
               </p>
             </div>
             <button
@@ -165,42 +298,43 @@ export default function AdminDashboardPage() {
         <div className="mx-auto max-w-6xl px-4 py-6 md:px-8 space-y-8">
           {/* Stats row */}
           <section className="grid gap-4 md:grid-cols-3">
-            <div className="rounded-2xl bg-gradient-to-br from-pink-500 to-purple-600 px-5 py-4 shadow-[0_18px_50px_rgba(255,0,122,0.5)]">
-              <p className="text-xs text-white/80">Pending tasks</p>
-              <p className="mt-2 text-2xl font-semibold">
-                {pendingTasks.length}
-              </p>
+            <div className="rounded-2xl bg-linear-to-br from-pink-500 to-purple-600 px-5 py-4 shadow-[0_18px_50px_rgba(255,0,122,0.5)]">
+              <p className="text-xs text-white/80">Pending proofs</p>
+              <p className="mt-2 text-2xl font-semibold">{proofTasks.length}</p>
               <p className="mt-1 text-[11px] text-white/70">
-                Tasks waiting for your approval.
+                Screenshots waiting for your review.
               </p>
             </div>
 
             <div className="rounded-2xl bg-[#1b0d24] px-5 py-4 shadow-[0_18px_50px_rgba(0,0,0,0.6)]">
-              <p className="text-xs text-white/70">Active tasks</p>
+              <p className="text-xs text-white/70">Pending tasks</p>
+              <p className="mt-2 text-2xl font-semibold">
+                {pendingTasks.length}
+              </p>
+              <p className="mt-1 text-[11px] text-white/60">
+                New campaigns waiting approval.
+              </p>
+            </div>
+
+            <div className="rounded-2xl bg-[#1b0d24] px-5 py-4 shadow-[0_18px_50px_rgba(0,0,0,0.6)]">
+              <p className="text-xs text-white/70">Active campaigns</p>
               <p className="mt-2 text-2xl font-semibold">
                 {activeTasks.length}
               </p>
               <p className="mt-1 text-[11px] text-white/60">
-                Visible on Earn Coins page.
-              </p>
-            </div>
-
-            <div className="rounded-2xl bg-[#1b0d24] px-5 py-4 shadow-[0_18px_50px_rgba(0,0,0,0.6)]">
-              <p className="text-xs text-white/70">Total tasks</p>
-              <p className="mt-2 text-2xl font-semibold">{tasks.length}</p>
-              <p className="mt-1 text-[11px] text-white/60">
-                All admin + user tasks.
+                Live on Earn Coins page.
               </p>
             </div>
           </section>
 
+        
           {/* Pending tasks list */}
           <section className="rounded-3xl bg-[#1b0d24] px-5 py-5 shadow-[0_24px_70px_rgba(0,0,0,0.7)]">
             <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
               <div>
                 <h3 className="text-sm font-semibold">Pending tasks</h3>
                 <p className="text-[11px] text-white/60">
-                  Review user requests and approve to make them live.
+                  Review campaigns and activate to show them to users.
                 </p>
               </div>
             </div>
@@ -272,7 +406,6 @@ export default function AdminDashboardPage() {
           </section>
 
           {/* Create admin high-priority task */}
-          {/* Create admin high-priority task */}
           <section className="rounded-3xl bg-[#1f1027] px-6 py-7 shadow-[0_20px_60px_rgba(0,0,0,0.7)] border border-white/10">
             <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
               <div>
@@ -283,8 +416,7 @@ export default function AdminDashboardPage() {
                   <span className="text-white">Admin High‑Priority Task</span>
                 </h3>
                 <p className="mt-1 text-[11px] text-white/70">
-                  Create featured tasks that always appear first on the Earn
-                  Coins page. Easy to set for your client.
+                  Create featured tasks that always appear first on Earn Coins.
                 </p>
               </div>
 
@@ -379,7 +511,7 @@ export default function AdminDashboardPage() {
                   <span className="font-semibold text-pink-300">
                     featured high‑reward
                   </span>{" "}
-                  card on the Earn Coins page.
+                  card on Earn Coins page.
                 </p>
 
                 <button

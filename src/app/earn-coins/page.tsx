@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Footer from "@/src/components/Footer";
-import { CheckCircle2, ExternalLink } from "lucide-react";
+import { CheckCircle2, ExternalLink, UploadCloud, X } from "lucide-react";
 import Image from "next/image";
 import DashboardNavbar from "@/src/components/DashboardNavbar";
 import { useRouter } from "next/navigation";
@@ -48,6 +48,20 @@ export default function EarnCoinsPage() {
 
   const [tab, setTab] = useState<"high" | "newest" | "all">("high");
   const [page, setPage] = useState(1);
+
+  // screenshot upload state
+  const [proofFiles, setProofFiles] = useState<Record<string, File | null>>({});
+  const [proofUrls, setProofUrls] = useState<Record<string, string>>({});
+  const [uploadingProof, setUploadingProof] = useState<Record<string, boolean>>(
+    {}
+  );
+  const [uploadError, setUploadError] = useState<string | null>(null);
+
+  // local preview URL per task
+  const [previewUrls, setPreviewUrls] = useState<Record<string, string>>({});
+
+  // success dialog
+  const [showDialog, setShowDialog] = useState(false);
 
   // load completed tasks from localStorage (per user & browser)
   useEffect(() => {
@@ -108,18 +122,16 @@ export default function EarnCoinsPage() {
   let tabFiltered = tasks;
 
   if (tab === "high") {
-    // only admin campaigns
     tabFiltered = tasks.filter((t) => t.createdByRole === "admin");
   } else if (tab === "newest") {
-    // tasks from last 2 hours (admin + user)
-    const twoHoursAgo = Date.now() - 2 * 60 * 60 * 1000;
+    // last 24 hours instead of 2h
+    const oneDayAgo = Date.now() - 24 * 60 * 60 * 1000;
     tabFiltered = tasks.filter((t) => {
       if (!t.createdAt) return false;
       const created = new Date(t.createdAt).getTime();
-      return created >= twoHoursAgo;
+      return created >= oneDayAgo;
     });
   }
-  // tab === "all" => no role filter, user + admin both
 
   // 2) search by userName
   const searchFiltered = tabFiltered.filter((task) => {
@@ -144,7 +156,6 @@ export default function EarnCoinsPage() {
     startIndex + PAGE_SIZE
   );
 
-  // reset page when tab/search change
   useEffect(() => {
     setPage(1);
   }, [tab, search]);
@@ -153,7 +164,7 @@ export default function EarnCoinsPage() {
   const totalActiveCampaigns = sortedTasks.length;
   const totalCompletedByUser = Object.values(completed).filter(Boolean).length;
 
-  const handleVerify = async (taskId: string) => {
+  const handleVerify = async (taskId: string, screenshotUrl: string) => {
     if (!canVerify[taskId] || verifying[taskId]) return;
 
     setVerifying((prev) => ({ ...prev, [taskId]: true }));
@@ -161,7 +172,7 @@ export default function EarnCoinsPage() {
       const res = await fetch("/api/tasks/verify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ taskId }),
+        body: JSON.stringify({ taskId, screenshotUrl }),
       });
 
       const text = await res.text();
@@ -178,6 +189,7 @@ export default function EarnCoinsPage() {
       }
 
       setCompleted((prev) => ({ ...prev, [taskId]: true }));
+      setShowDialog(true);
       router.refresh();
     } catch (e) {
       console.error("Verify request failed:", e);
@@ -236,6 +248,43 @@ export default function EarnCoinsPage() {
                   className="text-[10px] text-pink-200 hover:text-pink-100"
                 >
                   Close
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* dialog: coins after verification */}
+          {showDialog && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
+              <div className="w-full max-w-sm rounded-3xl bg-[#1b0d24] p-6 shadow-[0_24px_70px_rgba(0,0,0,0.8)] border border-pink-500/30">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-pink-500/20 text-pink-400">
+                      <CheckCircle2 className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <h2 className="text-sm font-semibold">
+                        Proof submitted successfully
+                      </h2>
+                      <p className="mt-1 text-xs text-white/70">
+                        Your screenshot is sent to the admin team. Coins will be
+                        added to your wallet once the follow is verified.
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setShowDialog(false)}
+                    className="rounded-full bg-white/5 p-1 text-white/60 hover:bg-white/10 hover:text-white"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+
+                <button
+                  onClick={() => setShowDialog(false)}
+                  className="mt-5 w-full rounded-full bg-pink-500 px-4 py-2 text-xs font-semibold text-white hover:bg-pink-600 shadow-[0_10px_30px_rgba(255,0,122,0.6)]"
+                >
+                  Got it
                 </button>
               </div>
             </div>
@@ -302,7 +351,7 @@ export default function EarnCoinsPage() {
                       : "bg-[#261027] text-white/70 hover:bg-[#311336]"
                   }`}
                 >
-                  Newest (last 2h)
+                  Newest (last 24h)
                 </button>
                 <button
                   onClick={() => setTab("all")}
@@ -333,6 +382,8 @@ export default function EarnCoinsPage() {
                 const canV = !!canVerify[task._id];
                 const isVerifying = !!verifying[task._id];
                 const isCompleted = !!completed[task._id];
+
+                const hasUploaded = !!proofUrls[task._id];
 
                 return (
                   <div
@@ -417,36 +468,213 @@ export default function EarnCoinsPage() {
                           </button>
                           <button
                             disabled
-                            className="flex w-full items-center justify-center gap-2 rounded-full bg-pink-500/30 px-4 py-2 text-xs font-semibold text-white/60 cursor-not-allowed"
+                            className="flex w-full items-center justify-center gap-2 rounded-full bg-pink-500/30 px-4 py-2 text-xs font-semibold text:white/60 cursor-not-allowed"
                           >
                             <span>Verified</span>
                           </button>
                         </>
                       ) : isHighlighted ? (
                         <>
-                          <button className="flex w-full items-center justify-center gap-2 rounded-full bg-[#062d16] px-4 py-2 text-xs font-semibold text-[#45e86c]">
-                            <CheckCircle2 className="h-3 w-3" />
-                            <span>Link Opened</span>
-                          </button>
+                          {/* Upload UI shown only after 15s (canVerify true) */}
+                          {!canV ? (
+                            <button className="flex w-full items-center justify-center gap-2 rounded-full bg-[#062d16] px-4 py-2 text-xs font-semibold text-[#45e86c]">
+                              <CheckCircle2 className="h-3 w-3" />
+                              <span>Link Opened · Wait 15s...</span>
+                            </button>
+                          ) : (
+                            <>
+                              {/* Pretty upload card */}
+                              <div className="rounded-3xl border border-white/10 bg-[#170b1f] px-4 py-3">
+                                <div className="flex items-center gap-3">
+                                  <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-pink-500/15 text-pink-400">
+                                    <UploadCloud className="h-4 w-4" />
+                                  </div>
+                                  <div className="flex-1">
+                                    <p className="text-xs font-semibold">
+                                      Upload follow screenshot
+                                    </p>
+                                    <p className="mt-1 text-[10px] text-white/50">
+                                      Take a clear screenshot after following
+                                      this creator and upload it here for
+                                      review.
+                                    </p>
+                                  </div>
+                                </div>
 
-                          <button
-                            type="button"
-                            disabled={!canV || isVerifying}
-                            onClick={() => handleVerify(task._id)}
-                            className={`flex w-full items-center justify-center gap-2 rounded-full px-4 py-2 text-xs font-semibold shadow-[0_10px_30px_rgba(255,0,122,0.6)] ${
-                              canV && !isVerifying
-                                ? "bg-pink-500 text-white hover:bg-pink-600"
-                                : "bg-pink-500/40 text-white/60 cursor-not-allowed"
-                            }`}
-                          >
-                            <span>
-                              {isVerifying
-                                ? "Verifying..."
-                                : canV
-                                ? "Verify Now"
-                                : "Wait 15s to verify"}
-                            </span>
-                          </button>
+                                <div className="mt-3 flex flex-col gap-2 rounded-2xl border border-dashed border-white/15 bg-black/30 px-3 py-3 text-center">
+                                  <input
+                                    id={`file-${task._id}`}
+                                    type="file"
+                                    accept="image/*"
+                                    className="hidden"
+                                    onChange={(e) => {
+                                      const file =
+                                        e.target.files?.[0] || null;
+
+                                      // cleanup old preview URL for this task
+                                      setPreviewUrls((prev) => {
+                                        const oldUrl = prev[task._id];
+                                        if (oldUrl) {
+                                          URL.revokeObjectURL(oldUrl);
+                                        }
+                                        return prev;
+                                      });
+
+                                      setProofFiles((prev) => ({
+                                        ...prev,
+                                        [task._id]: file,
+                                      }));
+
+                                      if (file) {
+                                        const objectUrl =
+                                          URL.createObjectURL(file);
+                                        setPreviewUrls((prev) => ({
+                                          ...prev,
+                                          [task._id]: objectUrl,
+                                        }));
+                                      } else {
+                                        setPreviewUrls((prev) => {
+                                          const next = { ...prev };
+                                          delete next[task._id];
+                                          return next;
+                                        });
+                                      }
+                                    }}
+                                  />
+                                  <label
+                                    htmlFor={`file-${task._id}`}
+                                    className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-full bg:white/5 px-4 py-2 text-[11px] font-semibold text-white/80 hover:bg:white/10"
+                                  >
+                                    <UploadCloud className="h-3 w-3" />
+                                    <span>
+                                      {proofFiles[task._id]
+                                        ? proofFiles[task._id]?.name
+                                        : "Choose screenshot"}
+                                    </span>
+                                  </label>
+
+                                  <p className="text-[10px] text-white/40">
+                                    JPG, PNG up to 5MB.
+                                  </p>
+
+                                  {/* preview */}
+                                  {previewUrls[task._id] && (
+                                    <div className="mt-2 flex justify-center">
+                                      <img
+                                        src={previewUrls[task._id]}
+                                        alt="Screenshot preview"
+                                        className="max-h-40 rounded-lg border border-white/10 object-contain"
+                                      />
+                                    </div>
+                                  )}
+                                </div>
+
+                                <button
+                                  type="button"
+                                  disabled={
+                                    !proofFiles[task._id] ||
+                                    uploadingProof[task._id] === true
+                                  }
+                                  onClick={async () => {
+                                    const file = proofFiles[task._id];
+                                    if (!file) return;
+
+                                    setUploadError(null);
+                                    setUploadingProof((prev) => ({
+                                      ...prev,
+                                      [task._id]: true,
+                                    }));
+
+                                    try {
+                                      const fd = new FormData();
+                                      fd.append("file", file);
+                                      fd.append("taskId", task._id);
+
+                                      const res = await fetch(
+                                        "/api/tasks/upload-proof",
+                                        {
+                                          method: "POST",
+                                          body: fd,
+                                        }
+                                      );
+
+                                      const data = await res.json();
+                                      if (!res.ok || !data.url) {
+                                        setUploadError(
+                                          "Failed to upload screenshot"
+                                        );
+                                        return;
+                                      }
+
+                                      setProofUrls((prev) => ({
+                                        ...prev,
+                                        [task._id]: data.url,
+                                      }));
+                                    } catch (e) {
+                                      console.error("Upload error", e);
+                                      setUploadError("Upload error");
+                                    } finally {
+                                      setUploadingProof((prev) => ({
+                                        ...prev,
+                                        [task._id]: false,
+                                      }));
+                                    }
+                                  }}
+                                  className={`mt-3 flex w-full items:center justify-center gap-2 rounded-full px-4 py-2 text-xs font-semibold ${
+                                    proofFiles[task._id] &&
+                                    !uploadingProof[task._id]
+                                      ? "bg-[#241027] text-white/80 hover:bg-[#2d1231]"
+                                      : "bg-[#241027]/40 text-white/40 cursor-not-allowed"
+                                  }`}
+                                >
+                                  {uploadingProof[task._id]
+                                    ? "Uploading..."
+                                    : hasUploaded
+                                    ? "Re-upload Screenshot"
+                                    : "Upload Screenshot"}
+                                </button>
+
+                                {proofUrls[task._id] && (
+                                  <p className="mt-2 text-center text-[10px] text-green-400">
+                                    Screenshot uploaded · now submit for
+                                    review.
+                                  </p>
+                                )}
+                                {uploadError && (
+                                  <p className="mt-1 text-center text-[10px] text-red-400">
+                                    {uploadError}
+                                  </p>
+                                )}
+                              </div>
+
+                              {/* submit for review button */}
+                              <button
+                                type="button"
+                                disabled={
+                                  isVerifying || !proofUrls[task._id]
+                                }
+                                onClick={() =>
+                                  handleVerify(task._id, proofUrls[task._id])
+                                }
+                                className={`mt-3 flex w-full items-center justify-center gap-2 rounded-full px-4 py-2 text-xs font-semibold shadow-[0_10px_30px_rgba(255,0,122,0.6)] ${
+                                  !isVerifying && proofUrls[task._id]
+                                    ? "bg-pink-500 text-white hover:bg-pink-600"
+                                    : "bg-pink-500/40 text-white/60 cursor-not-allowed"
+                                }`}
+                              >
+                                <span>
+                                  {isVerifying
+                                    ? "Submitting..."
+                                    : "Submit for Review"}
+                                </span>
+                              </button>
+
+                              <p className="mt-1 text-center text-[10px] text-white/40">
+                                Coins will be credited after admin confirms your
+                                follow.
+                              </p>
+                            </>
+                          )}
                         </>
                       ) : (
                         <>
@@ -502,7 +730,7 @@ export default function EarnCoinsPage() {
                         target="_blank"
                         rel="noopener noreferrer"
                         onClick={() => setHighlighted(String(p.id))}
-                        className="flex w-full items-center justify-center gap-2 rounded-full bg-[#241027] px-4 py-2 text-xs font-semibold text-white/80 hover:bg-[#2d1231]"
+                        className="flex w-full items-center justify-center gap-2 rounded-full bg-[#241027] px-4 py-2 text-xs font-semibold text:white/80 hover:bg-[#2d1231]"
                       >
                         <ExternalLink className="h-3 w-3" />
                         <span>Follow on TikTok</span>
@@ -514,17 +742,17 @@ export default function EarnCoinsPage() {
                             <CheckCircle2 className="h-3 w-3" />
                             <span>Link Opened</span>
                           </button>
-                          <button className="flex w-full items-center justify-center gap-2 rounded-full bg-pink-500 px-4 py-2 text-xs font-semibold text-white shadow-[0_10px_30px_rgba(255,0,122,0.6)] hover:bg-pink-600">
+                          <button className="flex w-full items-center justify-center gap-2 rounded-full bg-pink-500 px-4 py-2 text-xs font-semibold text:white shadow-[0_10px_30px_rgba(255,0,122,0.6)] hover:bg:pink-600">
                             <span>Verify Now</span>
                           </button>
                         </>
                       ) : (
                         <>
-                          <button className="flex w-full items-center justify-center gap-2 rounded-full bg-[#241027] px-4 py-2 text-xs font-semibold text-white/80 hover:bg-[#2d1231]">
+                          <button className="flex w-full items-center justify-center gap-2 rounded-full bg-[#241027] px-4 py-2 text-xs font-semibold text:white/80 hover:bg-[#2d1231]">
                             <CheckCircle2 className="h-3 w-3" />
                             <span>Verify Follow</span>
                           </button>
-                          <p className="text-center text-[10px] text-white/35">
+                          <p className="text-center text-[10px] text:white/35">
                             Click follow, then return to verify.
                           </p>
                         </>
