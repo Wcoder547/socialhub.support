@@ -30,16 +30,16 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    const existing = await TaskModel.findOne({
+    const runningCount = await TaskModel.countDocuments({
       userId: user._id.toString(),
       status: { $in: ["pending", "active"] },
     });
 
-    if (existing) {
+    if (runningCount >= 3) {
       return NextResponse.json(
         {
           error:
-            "You already have a running campaign. Please wait until it is completed before creating a new one.",
+            "You already have 3 running campaigns. Please wait until one is completed before creating a new one.",
         },
         { status: 400 }
       );
