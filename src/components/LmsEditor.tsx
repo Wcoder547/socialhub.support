@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
-
+// A simple rich text editor using TipTap
 interface LmsEditorProps {
   value: string;
   onChange: (val: string) => void;
@@ -27,7 +27,9 @@ export default function LmsEditor({ value, onChange }: LmsEditorProps) {
   // keep external value in sync when editing existing article
   useEffect(() => {
     if (editor && value !== editor.getHTML()) {
-      editor.commands.setContent(value || "", false);
+      editor.commands.setContent(value || "", {
+        emitUpdate: false,
+      });
     }
   }, [value, editor]);
 
@@ -59,7 +61,9 @@ export default function LmsEditor({ value, onChange }: LmsEditorProps) {
           type="button"
           onClick={() => editor.chain().focus().toggleBulletList().run()}
           className={`rounded px-2 py-1 ${
-            editor.isActive("bulletList") ? "bg-white/20" : "hover:bg-white/10"
+            editor.isActive("bulletList")
+              ? "bg-white/20"
+              : "hover:bg-white/10"
           }`}
         >
           • List
@@ -68,7 +72,9 @@ export default function LmsEditor({ value, onChange }: LmsEditorProps) {
           type="button"
           onClick={() => editor.chain().focus().toggleOrderedList().run()}
           className={`rounded px-2 py-1 ${
-            editor.isActive("orderedList") ? "bg-white/20" : "hover:bg-white/10"
+            editor.isActive("orderedList")
+              ? "bg-white/20"
+              : "hover:bg-white/10"
           }`}
         >
           1. List
@@ -77,14 +83,18 @@ export default function LmsEditor({ value, onChange }: LmsEditorProps) {
           type="button"
           onClick={() => editor.chain().focus().setParagraph().run()}
           className={`rounded px-2 py-1 ${
-            editor.isActive("paragraph") ? "bg-white/20" : "hover:bg-white/10"
+            editor.isActive("paragraph")
+              ? "bg-white/20"
+              : "hover:bg-white/10"
           }`}
         >
           P
         </button>
         <button
           type="button"
-          onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
+          onClick={() =>
+            editor.chain().focus().toggleHeading({ level: 2 }).run()
+          }
           className={`rounded px-2 py-1 ${
             editor.isActive("heading", { level: 2 })
               ? "bg-white/20"
