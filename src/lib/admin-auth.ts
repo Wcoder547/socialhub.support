@@ -6,7 +6,6 @@ const ADMIN_COOKIE_NAME = "admin_token";
 export async function requireAdmin() {
   const cookieStore = await cookies();
 
-  // @ts-expect-error: in this runtime cookies() has .get()
   const adminToken = cookieStore.get(ADMIN_COOKIE_NAME)?.value;
 
   if (!adminToken) {
