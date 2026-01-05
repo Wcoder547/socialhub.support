@@ -25,21 +25,19 @@ export async function GET() {
       return NextResponse.json({ tasks: [] }, { status: 200 });
     }
 
-    // OPTIONAL: hard limit so you never pull thousands in one go
-    const MAX_TASKS = 200;
-
+    // fetch ALL active tasks (no limit)
     const tasks = await TaskModel.find(
       { status: "active" },
-      "userId tiktokLink followers rewardPerFollower totalCost status createdByRole createdAt priority"
+      "userId tiktokLink tiktokUsername followers rewardPerFollower totalCost status createdByRole createdAt priority"
     )
       .sort({ priority: -1, createdAt: -1 })
-      .limit(MAX_TASKS)
       .lean();
 
     if (!tasks.length) {
       return NextResponse.json({ tasks: [] }, { status: 200 });
     }
 
+    // collect non-admin creator ids for avatar/name
     const creatorIds = Array.from(
       new Set(
         tasks

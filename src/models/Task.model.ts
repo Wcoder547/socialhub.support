@@ -1,30 +1,46 @@
 // models/Task.model.ts
 import mongoose, { Schema, Document } from "mongoose";
 
-interface TaskDoc extends Document {
+export interface TaskDoc extends Document {
   userId: string; // owner who created campaign
   tiktokLink: string;
+  tiktokUsername: string; // TikTok handle (without @)
   followers: number;
   completedFollowers: number;
   rewardPerFollower: number;
   totalCost: number;
-  status: string;
+  status: "pending" | "active" | "completed" | "cancelled";
   createdByRole: "admin" | "user";
   proofScreenshotUrl?: string | null;
   proofStatus?: "pending" | "approved" | "rejected" | null;
-  proofSubmittedBy?: mongoose.Types.ObjectId | null; // <- add this
+  proofSubmittedBy?: mongoose.Types.ObjectId | null;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 const TaskSchema = new Schema<TaskDoc>(
   {
     userId: { type: String, required: true },
     tiktokLink: { type: String, required: true },
+
+    tiktokUsername: { type: String, trim: true, required: true },
+
     followers: { type: Number, required: true },
     completedFollowers: { type: Number, default: 0 },
     rewardPerFollower: { type: Number, required: true },
     totalCost: { type: Number, required: true },
-    status: { type: String, default: "active" },
-    createdByRole: { type: String, enum: ["admin", "user"], default: "user" },
+
+    status: {
+      type: String,
+      enum: ["pending", "active", "completed", "cancelled"],
+      default: "pending",
+    },
+
+    createdByRole: {
+      type: String,
+      enum: ["admin", "user"],
+      default: "user",
+    },
 
     proofScreenshotUrl: { type: String, default: null },
     proofStatus: {
@@ -41,5 +57,7 @@ const TaskSchema = new Schema<TaskDoc>(
   { timestamps: true }
 );
 
-export default mongoose.models.Task ||
-  mongoose.model<TaskDoc>("Task", TaskSchema);
+const TaskModel =
+  mongoose.models.Task || mongoose.model<TaskDoc>("Task", TaskSchema);
+
+export default TaskModel;

@@ -107,3 +107,36 @@ export async function POST(req: Request) {
     );
   }
 }
+
+// DELETE /api/admin/lms/articles?id=ARTICLE_ID -> delete article (admin)
+export async function DELETE(req: Request) {
+  const authError = await requireAdmin();
+  if (authError) return authError;
+
+  try {
+    const { searchParams } = new URL(req.url);
+    const id = searchParams.get("id");
+
+    if (!id) {
+      return NextResponse.json(
+        { error: "Article id is required" },
+        { status: 400 }
+      );
+    }
+
+    await dbConnect();
+
+    const deleted = await LmsArticleModel.findByIdAndDelete(id);
+    if (!deleted) {
+      return NextResponse.json({ error: "Article not found" }, { status: 404 });
+    }
+
+    return NextResponse.json({ ok: true }, { status: 200 });
+  } catch (err) {
+    console.error("DELETE /api/admin/lms/articles error:", err);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
+  }
+}

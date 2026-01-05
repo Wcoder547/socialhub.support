@@ -10,6 +10,7 @@ import { useRouter } from "next/navigation";
 interface Task {
   _id: string;
   tiktokLink: string;
+  tiktokUsername?: string | null;
   followers: number;
   rewardPerFollower: number;
   totalCost: number;
@@ -30,8 +31,6 @@ const fallbackProfiles = [
   },
 ];
 
-const PAGE_SIZE = 100;
-
 export default function EarnCoinsPage() {
   const router = useRouter();
 
@@ -47,7 +46,6 @@ export default function EarnCoinsPage() {
   const [search, setSearch] = useState("");
 
   const [tab, setTab] = useState<"high" | "newest" | "all">("all");
-  const [page, setPage] = useState(1);
 
   // screenshot upload state
   const [proofFiles, setProofFiles] = useState<Record<string, File | null>>({});
@@ -62,6 +60,9 @@ export default function EarnCoinsPage() {
 
   // success dialog
   const [showDialog, setShowDialog] = useState(false);
+
+  // total active count from backend
+  const [totalActiveInDb, setTotalActiveInDb] = useState<number | null>(null);
 
   // load completed tasks from localStorage (per user & browser)
   useEffect(() => {
@@ -92,7 +93,7 @@ export default function EarnCoinsPage() {
     localStorage.setItem("completedTasks", JSON.stringify(completed));
   }, [completed]);
 
-  // load tasks
+  // load tasks (now backend already returns all active)
   useEffect(() => {
     const fetchTasks = async () => {
       try {
@@ -114,6 +115,24 @@ export default function EarnCoinsPage() {
     fetchTasks();
   }, []);
 
+  // load total active count
+  useEffect(() => {
+    const fetchTotalActive = async () => {
+      try {
+        const res = await fetch("/api/tasks/active-count");
+        if (!res.ok) return;
+        const data = await res.json();
+        if (typeof data.totalActive === "number") {
+          setTotalActiveInDb(data.totalActive);
+        }
+      } catch (err) {
+        console.error("Fetch total active error:", err);
+      }
+    };
+
+    fetchTotalActive();
+  }, []);
+
   const hasTasks = tasks.length > 0;
 
   // --- filtering & sorting pipeline ---
@@ -124,7 +143,6 @@ export default function EarnCoinsPage() {
   if (tab === "high") {
     tabFiltered = tasks.filter((t) => t.createdByRole === "admin");
   } else if (tab === "newest") {
-    // last 24 hours instead of 2h
     const oneDayAgo = Date.now() - 24 * 60 * 60 * 1000;
     tabFiltered = tasks.filter((t) => {
       if (!t.createdAt) return false;
@@ -133,11 +151,21 @@ export default function EarnCoinsPage() {
     });
   }
 
-  // 2) search by userName
+  // 2) search by username or userName
   const searchFiltered = tabFiltered.filter((task) => {
     if (!search.trim()) return true;
-    const name = task.userName || "";
-    return name.toLowerCase().includes(search.trim().toLowerCase());
+
+    const query = search.trim().toLowerCase();
+
+    const creatorName = (task.userName || "").toLowerCase();
+    const usernameRaw = task.tiktokUsername || "";
+    const username = usernameRaw.toLowerCase();
+
+    return (
+      creatorName.includes(query) ||
+      username.includes(query) ||
+      ("@" + username).includes(query)
+    );
   });
 
   // 3) sort newest‑first
@@ -147,22 +175,11 @@ export default function EarnCoinsPage() {
     return db - da;
   });
 
-  // 4) pagination
-  const totalPages = Math.max(1, Math.ceil(sortedTasks.length / PAGE_SIZE));
-  const currentPage = Math.min(page, totalPages);
-  const startIndex = (currentPage - 1) * PAGE_SIZE;
-  const paginatedTasks = sortedTasks.slice(
-    startIndex,
-    startIndex + PAGE_SIZE
-  );
-
-  useEffect(() => {
-    setPage(1);
-  }, [tab, search]);
-
   // totals (for header)
-  const totalActiveCampaigns = sortedTasks.length;
+  const totalActiveCampaigns =
+    totalActiveInDb !== null ? totalActiveInDb : sortedTasks.length;
   const totalCompletedByUser = Object.values(completed).filter(Boolean).length;
+  const showingOnThisPage = sortedTasks.length; // now "this page" = all
 
   const handleVerify = async (taskId: string, screenshotUrl: string) => {
     if (!canVerify[taskId] || verifying[taskId]) return;
@@ -307,6 +324,7 @@ export default function EarnCoinsPage() {
                   <span className="font-semibold text-pink-400">
                     {totalActiveCampaigns}
                   </span>
+            
                 </div>
                 <div className="rounded-full bg-[#1b0d24] px-3 py-1 border border-white/10">
                   Your Completed Campaigns:{" "}
@@ -323,17 +341,18 @@ export default function EarnCoinsPage() {
                 <input
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Search your campaign by name..."
+                  placeholder="Search your campaign by TikTok username..."
                   className="w-full rounded-full border border_white/10 bg-[#1b0d24]/80 px-4 py-2 text-xs text-white placeholder:text-white/40 outline-none ring-0 focus:border-pink-500 focus:bg-[#1b0d24]"
                 />
                 <p className="mt-1 text-[10px] text-white/40">
-                  Type the name on your campaign to confirm it’s listed.
+                  Type your TikTok username (for example: @user123) to confirm
+                  your campaign is listed.
                 </p>
               </div>
 
               {/* tabs */}
               <div className="flex flex-wrap items-center justify-start gap-2 text-xs md:justify-end">
-                 <button
+                <button
                   onClick={() => setTab("all")}
                   className={`rounded-full px-4 py-2 ${
                     tab === "all"
@@ -344,7 +363,7 @@ export default function EarnCoinsPage() {
                   All
                 </button>
 
-                 <button
+                <button
                   onClick={() => setTab("newest")}
                   className={`rounded-full px-4 py-2 ${
                     tab === "newest"
@@ -354,7 +373,7 @@ export default function EarnCoinsPage() {
                 >
                   Newest (last 24h)
                 </button>
-                
+
                 <button
                   onClick={() => setTab("high")}
                   className={`rounded-full px-4 py-2 font-semibold shadow-[0_10px_30px_rgba(255,0,122,0.5)] ${
@@ -365,8 +384,6 @@ export default function EarnCoinsPage() {
                 >
                   High Reward
                 </button>
-               
-               
               </div>
             </div>
           </header>
@@ -379,15 +396,20 @@ export default function EarnCoinsPage() {
               </div>
             )}
 
-            {/* Real tasks (filtered + paginated) */}
+            {/* Real tasks (filtered, all shown) */}
             {hasTasks &&
-              paginatedTasks.map((task) => {
+              sortedTasks.map((task) => {
                 const isHighlighted = highlighted === task._id;
                 const canV = !!canVerify[task._id];
                 const isVerifying = !!verifying[task._id];
                 const isCompleted = !!completed[task._id];
 
                 const hasUploaded = !!proofUrls[task._id];
+
+                const handleLabel =
+                  task.tiktokUsername && task.tiktokUsername.trim().length > 0
+                    ? `@${task.tiktokUsername.replace(/^@/, "")}`
+                    : "TikTok Campaign";
 
                 return (
                   <div
@@ -426,7 +448,7 @@ export default function EarnCoinsPage() {
                     {/* handle & target */}
                     <div className="text-center">
                       <div className="text-sm font-semibold">
-                        TikTok Campaign
+                        {handleLabel}
                       </div>
                       <div className="mt-1 text-[11px] text-white/60">
                         Target: {task.followers} followers
@@ -479,7 +501,6 @@ export default function EarnCoinsPage() {
                         </>
                       ) : isHighlighted ? (
                         <>
-                          {/* Upload UI shown only after 15s (canVerify true) */}
                           {!canV ? (
                             <button className="flex w-full items-center justify-center gap-2 rounded-full bg-[#062d16] px-4 py-2 text-xs font-semibold text-[#45e86c]">
                               <CheckCircle2 className="h-3 w-3" />
@@ -487,7 +508,6 @@ export default function EarnCoinsPage() {
                             </button>
                           ) : (
                             <>
-                              {/* Pretty upload card */}
                               <div className="rounded-3xl border border-white/10 bg-[#170b1f] px-4 py-3">
                                 <div className="flex items-center gap-3">
                                   <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-pink-500/15 text-pink-400">
@@ -515,7 +535,6 @@ export default function EarnCoinsPage() {
                                       const file =
                                         e.target.files?.[0] || null;
 
-                                      // cleanup old preview URL for this task
                                       setPreviewUrls((prev) => {
                                         const oldUrl = prev[task._id];
                                         if (oldUrl) {
@@ -561,7 +580,6 @@ export default function EarnCoinsPage() {
                                     JPG, PNG up to 5MB.
                                   </p>
 
-                                  {/* preview */}
                                   {previewUrls[task._id] && (
                                     <div className="mt-2 flex justify-center">
                                       <img
@@ -651,14 +669,16 @@ export default function EarnCoinsPage() {
                                 )}
                               </div>
 
-                              {/* submit for review button */}
                               <button
                                 type="button"
                                 disabled={
                                   isVerifying || !proofUrls[task._id]
                                 }
                                 onClick={() =>
-                                  handleVerify(task._id, proofUrls[task._id])
+                                  handleVerify(
+                                    task._id,
+                                    proofUrls[task._id]
+                                  )
                                 }
                                 className={`mt-3 flex w-full items-center justify-center gap-2 rounded-full px-4 py-2 text-xs font-semibold shadow-[0_10px_30px_rgba(255,0,122,0.6)] ${
                                   !isVerifying && proofUrls[task._id]
@@ -766,37 +786,6 @@ export default function EarnCoinsPage() {
                 );
               })}
           </section>
-
-          {/* pagination controls */}
-          {sortedTasks.length > PAGE_SIZE && (
-            <div className="mt-8 flex items-center justify-center gap-4 text-xs text-white/70">
-              <button
-                disabled={currentPage <= 1}
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                className={`rounded-full px-4 py-2 ${
-                  currentPage <= 1
-                    ? "bg-[#1b0d24] text-white/30 cursor-not-allowed"
-                    : "bg-[#241027] hover:bg-[#2d1231]"
-                }`}
-              >
-                Previous
-              </button>
-              <span>
-                Page {currentPage} of {totalPages}
-              </span>
-              <button
-                disabled={currentPage >= totalPages}
-                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                className={`rounded-full px-4 py-2 ${
-                  currentPage >= totalPages
-                    ? "bg-[#1b0d24] text-white/30 cursor-not-allowed"
-                    : "bg-[#241027] hover:bg-[#2d1231]"
-                }`}
-              >
-                Next
-              </button>
-            </div>
-          )}
         </div>
       </main>
       <Footer />

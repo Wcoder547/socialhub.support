@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ShieldCheck } from "lucide-react";
+import { ShieldCheck, Trash2 } from "lucide-react";
 import { Editor } from "@tinymce/tinymce-react";
 
 interface LmsArticle {
@@ -134,6 +134,35 @@ export default function AdminLmsArticlesPage() {
       alert("Failed to create article");
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    const confirmed = window.confirm(
+      "Are you sure you want to delete this article? This action cannot be undone."
+    );
+    if (!confirmed) return;
+
+    try {
+      // optimistic UI: remove from list first
+      setArticles((prev) => prev.filter((a) => a._id !== id));
+
+      const res = await fetch(`/api/admin/lms/articles?id=${id}`, {
+        method: "DELETE",
+      });
+
+      const data = await res.json().catch(() => null);
+      if (!res.ok) {
+        console.error("Delete article error:", data);
+        alert(data?.error || "Failed to delete article");
+        // reload from server to recover
+        fetchArticles();
+        return;
+      }
+    } catch (err) {
+      console.error("Delete article error:", err);
+      alert("Failed to delete article");
+      fetchArticles();
     }
   };
 
@@ -333,7 +362,7 @@ export default function AdminLmsArticlesPage() {
                 </label>
                 <div className="rounded-lg border border-white/10 overflow-hidden bg-black">
                   <Editor
-                    apiKey="pw1l9vabfi2nn4nuvkyfcs1al0mri9rie0llsh6lxx7vdrss" //API_KEY
+                    apiKey="pw1l9vabfi2nn4nuvkyfcs1al0mri9rie0llsh6lxx7vdrss"
                     value={body}
                     onEditorChange={(content) => setBody(content)}
                     init={{
@@ -375,7 +404,7 @@ export default function AdminLmsArticlesPage() {
                 disabled={submitting}
                 className={`mt-2 rounded-full px-5 py-2 text-xs font-semibold ${
                   submitting
-                    ? "bg-green-500/40 cursor-not-allowed"
+                    ? "bg.green-500/40 cursor-not-allowed"
                     : "bg-green-500 hover:bg-green-600"
                 }`}
               >
@@ -410,9 +439,20 @@ export default function AdminLmsArticlesPage() {
                         {a.readTimeMinutes || 1} min read
                       </p>
                     </div>
-                    <span className="text-[10px] text-white/40">
-                      {new Date(a.createdAt).toLocaleDateString()}
-                    </span>
+
+                    <div className="flex items-center gap-3">
+                      <span className="text-[10px] text-white/40">
+                        {new Date(a.createdAt).toLocaleDateString()}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => handleDelete(a._id)}
+                        className="rounded-full bg-red-500/15 p-1.5 text-red-300 hover:bg-red-500/25 hover:text-red-100"
+                        aria-label="Delete article"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>

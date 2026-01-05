@@ -1,18 +1,20 @@
 "use client";
 
-import { LogOut } from "lucide-react";
+import { LogOut, Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
 import Image from "next/image";
 
 const DashboardNavbar = () => {
   const router = useRouter();
-const { data: session, status } = useSession();
-const photo = session?.user?.photo;
-const name = session?.user?.name || "User";
-const coins = session?.user?.coins ?? 0;
-console.log("User coins:", coins);
-console.log("User photo:", session?.user?.photo);
+  const { data: session } = useSession();
+  const photo = session?.user?.photo;
+  const name = session?.user?.name || "User";
+  const coins = session?.user?.coins ?? 0;
+
+  console.log("User coins:", coins);
+  console.log("User photo:", session?.user?.photo);
+
   return (
     <header className="border-b border-[#2a0f26] bg-[#170818]">
       <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3 md:px-6">
@@ -30,7 +32,7 @@ console.log("User photo:", session?.user?.photo);
         </div>
 
         {/* Right section */}
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 sm:gap-4">
           {/* Coins pill */}
           <div className="flex items-center rounded-full bg-[#2b0f2b] px-1 py-1">
             <div className="flex items-center gap-1 rounded-full bg-[#3b1136] px-3 py-1">
@@ -49,20 +51,33 @@ console.log("User photo:", session?.user?.photo);
             </button>
           </div>
 
-         {/* User avatar */}
-{photo ? (
-  <Image
-    src={photo}
-    alt={name}
-    width={32}
-    height={32}
-    className="h-8 w-8 rounded-full object-cover border border-pink-400"
-  />
-) : (
-  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#f5d9a5] text-xs text-[#5b3b16]">
-    👤
-  </div>
-)}
+          {/* New / Learn button – visible on mobile + desktop */}
+          <button
+            type="button"
+            onClick={() => router.push("/learn")}
+            className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-500 px-3 py-1.5 text-[11px] font-semibold text-white shadow-[0_8px_24px_rgba(255,0,122,0.6)] hover:brightness-110 transition"
+          >
+            <Sparkles className="h-3 w-3" />
+            <span>New · Learn</span>
+          </button>
+
+          {/* User avatar – hidden on mobile, shown from sm and up */}
+          <div className="hidden sm:flex">
+            {photo ? (
+              <Image
+                src={photo}
+                alt={name}
+                width={32}
+                height={32}
+                className="h-8 w-8 rounded-full object-cover border border-pink-400"
+              />
+            ) : (
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#f5d9a5] text-xs text-[#5b3b16]">
+                👤
+              </div>
+            )}
+          </div>
+
           {/* Logout icon */}
           <button
             type="button"

@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Image from "next/image";
+import DashboardNavbar from "@/src/components/DashboardNavbar";
+import Footer from "@/src/components/Footer";
 
 interface Article {
   _id: string;
@@ -61,17 +63,25 @@ export default function LearnArticlePage() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-[#08030c] text-white flex items-center justify-center">
-        <p className="text-xs text-white/60">Loading article...</p>
-      </main>
+      <div className="min-h-screen bg-[#08030c] text-white flex flex-col">
+        <DashboardNavbar />
+        <main className="flex-1 flex items-center justify-center">
+          <p className="text-xs text-white/60">Loading article...</p>
+        </main>
+        <Footer />
+      </div>
     );
   }
 
   if (error || !article) {
     return (
-      <main className="min-h-screen bg-[#08030c] text-white flex items-center justify-center">
-        <p className="text-xs text-red-400">{error || "Article not found"}</p>
-      </main>
+      <div className="min-h-screen bg-[#08030c] text-white flex flex-col">
+        <DashboardNavbar />
+        <main className="flex-1 flex items-center justify-center">
+          <p className="text-xs text-red-400">{error || "Article not found"}</p>
+        </main>
+        <Footer />
+      </div>
     );
   }
 
@@ -86,69 +96,83 @@ export default function LearnArticlePage() {
       : null;
 
   return (
-    <main className="min-h-screen bg-[#08030c] text-white">
-      <div className="mx-auto max-w-3xl px-4 py-8 space-y-6">
-        {/* Header */}
-        <header className="space-y-2">
-          <p className="text-[11px] uppercase text-white/50">
-            {article.category || "General"}
-          </p>
-          <h1 className="text-3xl font-semibold">{article.title}</h1>
-          {article.subtitle && (
-            <p className="text-base text-white/70">{article.subtitle}</p>
-          )}
+    <div className="min-h-screen bg-[#08030c] text-white flex flex-col">
+      <DashboardNavbar />
 
-          <div className="flex flex-wrap items-center gap-2 text-[11px] text-white/60 mt-2">
-            {article.createdBy?.photo && (
-              <Image
-                src={article.createdBy.photo}
-                alt={article.createdBy.name || "Author"}
-                className="h-7 w-7 rounded-full object-cover"
-                width={28}
-                height={28}
-              />
+      <main className="flex-1">
+        <div className="mx-auto max-w-3xl px-4 py-8 md:px-6 md:py-10 space-y-8">
+          {/* Header */}
+          <header className="space-y-3">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.25em] text-pink-500">
+              {article.category || "General"}
+            </p>
+            <h1 className="text-3xl font-semibold md:text-4xl">
+              {article.title}
+            </h1>
+            {article.subtitle && (
+              <p className="text-sm text-white/70 md:text-[13px]">
+                {article.subtitle}
+              </p>
             )}
-            {article.createdBy?.name && <span>{article.createdBy.name}</span>}
-            <span>· {formattedDate}</span>
-            <span>· {article.readTimeMinutes || 2} min read</span>
-          </div>
 
-          {article.tags && article.tags.length > 0 && (
-            <div className="mt-2 flex flex-wrap gap-1">
-              {article.tags.map((tag) => (
-                <span
-                  key={tag}
-                  className="rounded-full border border-white/15 px-2 py-[2px] text-[10px] text-white/70"
-                >
-                  #{tag}
+            <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px] text-white/60">
+              {article.createdBy?.photo && (
+                <Image
+                  src={article.createdBy.photo}
+                  alt={article.createdBy.name || "Author"}
+                  className="h-7 w-7 rounded-full object-cover border border-pink-400"
+                  width={28}
+                  height={28}
+                />
+              )}
+              {article.createdBy?.name && (
+                <span className="font-medium text-white">
+                  {article.createdBy.name}
                 </span>
-              ))}
+              )}
+              <span>· {formattedDate}</span>
+              <span>· {article.readTimeMinutes || 2} min read</span>
             </div>
-          )}
-        </header>
 
-        {/* YouTube embed */}
-        {embedUrl && (
-          <section>
-            <div className="relative w-full overflow-hidden rounded-2xl border border-white/10 bg-black aspect-video">
-              <iframe
-                src={embedUrl}
-                title={article.title}
-                className="h-full w-full"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                allowFullScreen
-              ></iframe>
+            {article.tags && article.tags.length > 0 && (
+              <div className="mt-3 flex flex-wrap gap-1.5">
+                {article.tags.map((tag) => (
+                  <span
+                    key={tag}
+                    className="rounded-full border border-white/15 bg-white/5 px-2 py-[3px] text-[10px] text-white/70"
+                  >
+                    #{tag}
+                  </span>
+                ))}
+              </div>
+            )}
+          </header>
+
+          {/* YouTube embed */}
+          {embedUrl && (
+            <section>
+              <div className="relative w-full overflow-hidden rounded-2xl border border-white/10 bg-black aspect-video shadow-[0_18px_45px_rgba(0,0,0,0.8)]">
+                <iframe
+                  src={embedUrl}
+                  title={article.title}
+                  className="h-full w-full"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  allowFullScreen
+                ></iframe>
+              </div>
+            </section>
+          )}
+
+          {/* Article body (render TinyMCE HTML) */}
+          <section className="rounded-2xl border border-white/10 bg-[#130818] px-4 py-5 md:px-6 md:py-6">
+            <div className="prose prose-invert max-w-none prose-p:mb-3 prose-p:text-[15px] prose-p:leading-relaxed prose-a:text-pink-400 prose-a:underline-offset-2 prose-strong:text-white">
+              <div dangerouslySetInnerHTML={{ __html: article.body }} />
             </div>
           </section>
-        )}
+        </div>
+      </main>
 
-        {/* Article body (render TinyMCE HTML) */}
-        <section className="prose prose-invert max-w-none text-[15px] leading-relaxed">
-          <div
-            dangerouslySetInnerHTML={{ __html: article.body }}
-          />
-        </section>
-      </div>
-    </main>
+      <Footer />
+    </div>
   );
 }
