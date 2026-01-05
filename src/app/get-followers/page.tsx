@@ -3,12 +3,18 @@
 import DashboardNavbar from "../../components/DashboardNavbar";
 import { CheckCircle2, Coins } from "lucide-react";
 import Footer from "../../components/Footer";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 
 export default function CreateTaskPage() {
   const router = useRouter();
+
+  const { data: session, status } = useSession();
+
+  // local coins state, starts at 0 until session loads
+  const [localCoins, setLocalCoins] = useState(0);
+
   const [followers, setFollowers] = useState(50);
   const [reward, setReward] = useState(6);
   const [tiktokLink, setTiktokLink] = useState(
@@ -32,13 +38,12 @@ export default function CreateTaskPage() {
   const max = 100;
   const percent = ((followers - min) / (max - min)) * 100;
 
-  const { data: session, status } = useSession();
-  const [localCoins, setLocalCoins] = useState(session?.user?.coins ?? 0);
-
-  // keep localCoins in sync when session loads
-  if (status === "authenticated" && localCoins !== session?.user?.coins) {
-    setLocalCoins(session?.user?.coins ?? 0);
-  }
+  // Sync localCoins whenever authenticated session changes
+  useEffect(() => {
+    if (status === "authenticated" && session?.user?.coins != null) {
+      setLocalCoins(session.user.coins);
+    }
+  }, [status, session]);
 
   const coins = localCoins;
   const options = [10, 14, 18, 20];
@@ -83,17 +88,21 @@ export default function CreateTaskPage() {
         return;
       }
 
-      // Update coins locally
-      setLocalCoins(data.newBalance);
+      // Expect the API to return { newBalance, tiktokUsername? }
+      if (typeof data?.newBalance === "number") {
+        setLocalCoins(data.newBalance);
+      }
 
       const info = {
         followers,
         reward,
         totalCost,
-        remaining: data.newBalance,
+        remaining: typeof data?.newBalance === "number"
+          ? data.newBalance
+          : remaining,
         tiktokLink,
         tiktokUsername:
-          cleanUsername || (data.tiktokUsername as string | null) || null,
+          cleanUsername || (data?.tiktokUsername as string | null) || null,
       };
       setLastTaskInfo(info);
       setShowSuccess(true);
@@ -105,7 +114,7 @@ export default function CreateTaskPage() {
     }
   };
 
-  // optionally block UI while session is loading
+  // Optionally block UI while session is loading
   if (status === "loading") {
     return (
       <main className="min-h-screen bg-[#120814] text-white">
@@ -119,6 +128,7 @@ export default function CreateTaskPage() {
     <>
       <main className="min-h-screen bg-[#120814] text-white">
         <DashboardNavbar />
+
         {showSuccess && lastTaskInfo && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
             <div className="w-full max-w-sm rounded-2xl bg-[#1b0d24] p-6 shadow-[0_24px_70px_rgba(0,0,0,0.8)]">
