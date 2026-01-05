@@ -46,7 +46,7 @@ export default function EarnCoinsPage() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [search, setSearch] = useState("");
 
-  const [tab, setTab] = useState<"high" | "newest" | "all">("high");
+  const [tab, setTab] = useState<"high" | "newest" | "all">("all");
   const [page, setPage] = useState(1);
 
   // screenshot upload state
@@ -333,6 +333,28 @@ export default function EarnCoinsPage() {
 
               {/* tabs */}
               <div className="flex flex-wrap items-center justify-start gap-2 text-xs md:justify-end">
+                 <button
+                  onClick={() => setTab("all")}
+                  className={`rounded-full px-4 py-2 ${
+                    tab === "all"
+                      ? "bg-pink-500 text-white"
+                      : "bg-[#261027] text-white/70 hover:bg-[#311336]"
+                  }`}
+                >
+                  All
+                </button>
+
+                 <button
+                  onClick={() => setTab("newest")}
+                  className={`rounded-full px-4 py-2 ${
+                    tab === "newest"
+                      ? "bg-pink-500 text-white"
+                      : "bg-[#261027] text-white/70 hover:bg-[#311336]"
+                  }`}
+                >
+                  Newest (last 24h)
+                </button>
+                
                 <button
                   onClick={() => setTab("high")}
                   className={`rounded-full px-4 py-2 font-semibold shadow-[0_10px_30px_rgba(255,0,122,0.5)] ${
@@ -343,26 +365,8 @@ export default function EarnCoinsPage() {
                 >
                   High Reward
                 </button>
-                <button
-                  onClick={() => setTab("newest")}
-                  className={`rounded-full px-4 py-2 ${
-                    tab === "newest"
-                      ? "bg-pink-500 text-white"
-                      : "bg-[#261027] text-white/70 hover:bg-[#311336]"
-                  }`}
-                >
-                  Newest (last 24h)
-                </button>
-                <button
-                  onClick={() => setTab("all")}
-                  className={`rounded-full px-4 py-2 ${
-                    tab === "all"
-                      ? "bg-pink-500 text-white"
-                      : "bg-[#261027] text-white/70 hover:bg-[#311336]"
-                  }`}
-                >
-                  All
-                </button>
+               
+               
               </div>
             </div>
           </header>

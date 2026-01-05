@@ -274,7 +274,7 @@ export default function AdminDashboardPage() {
           </button>
         </div>
 
-        <nav className="flex-1 px-4 py-4 text-sm space-y-2">
+               <nav className="flex-1 px-4 py-4 text-sm space-y-2">
           <button className="w-full rounded-xl bg-[#241027] px-3 py-2 text-left font-semibold text-white shadow-[0_10px_30px_rgba(0,0,0,0.6)]">
             Dashboard
           </button>
@@ -288,7 +288,18 @@ export default function AdminDashboardPage() {
           >
             Review Proofs
           </button>
+
+          <button
+            onClick={() => {
+              setIsSidebarOpen(false);
+              router.push("/admin/lms");
+            }}
+            className="w-full rounded-xl bg-transparent px-3 py-2 text-left text-white/70 hover:bg-[#241027]"
+          >
+            LMS Articles
+          </button>
         </nav>
+
 
         <div className="px-4 pb-4 text-[11px] text-white/40 space-y-1">
           <p>No coin limit for admin.</p>
