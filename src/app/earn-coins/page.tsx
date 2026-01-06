@@ -50,9 +50,9 @@ export default function EarnCoinsPage() {
   // screenshot upload state
   const [proofFiles, setProofFiles] = useState<Record<string, File | null>>({});
   const [proofUrls, setProofUrls] = useState<Record<string, string>>({});
-  const [uploadingProof, setUploadingProof] = useState<Record<string, boolean>>(
-    {}
-  );
+  const [uploadingProof, setUploadingProof] = useState<
+    Record<string, boolean>
+  >({});
   const [uploadError, setUploadError] = useState<string | null>(null);
 
   // local preview URL per task
@@ -229,16 +229,12 @@ export default function EarnCoinsPage() {
       }
 
       setHighlighted(task._id);
+
+      // enable verify immediately (no 15s delay)
       setCanVerify((prev) => ({
         ...prev,
-        [task._id]: false,
+        [task._id]: true,
       }));
-      setTimeout(() => {
-        setCanVerify((prev) => ({
-          ...prev,
-          [task._id]: true,
-        }));
-      }, 15000);
 
       window.open(task.tiktokLink, "_blank", "noopener");
     } catch (e) {
@@ -284,8 +280,8 @@ export default function EarnCoinsPage() {
                         Proof submitted successfully
                       </h2>
                       <p className="mt-1 text-xs text-white/70">
-                        Your screenshot is sent to the admin team. Coins will be
-                        added to your wallet once the follow is verified.
+                        Your screenshot is sent to the admin team. Coins will
+                        be added to your wallet once the follow is verified.
                       </p>
                     </div>
                   </div>
@@ -324,7 +320,6 @@ export default function EarnCoinsPage() {
                   <span className="font-semibold text-pink-400">
                     {totalActiveCampaigns}
                   </span>
-            
                 </div>
                 <div className="rounded-full bg-[#1b0d24] px-3 py-1 border border-white/10">
                   Your Completed Campaigns:{" "}
@@ -407,7 +402,8 @@ export default function EarnCoinsPage() {
                 const hasUploaded = !!proofUrls[task._id];
 
                 const handleLabel =
-                  task.tiktokUsername && task.tiktokUsername.trim().length > 0
+                  task.tiktokUsername &&
+                  task.tiktokUsername.trim().length > 0
                     ? `@${task.tiktokUsername.replace(/^@/, "")}`
                     : "TikTok Campaign";
 
@@ -501,204 +497,188 @@ export default function EarnCoinsPage() {
                         </>
                       ) : isHighlighted ? (
                         <>
-                          {!canV ? (
-                            <button className="flex w-full items-center justify-center gap-2 rounded-full bg-[#062d16] px-4 py-2 text-xs font-semibold text-[#45e86c]">
-                              <CheckCircle2 className="h-3 w-3" />
-                              <span>Link Opened · Wait 15s...</span>
-                            </button>
-                          ) : (
-                            <>
-                              <div className="rounded-3xl border border-white/10 bg-[#170b1f] px-4 py-3">
-                                <div className="flex items-center gap-3">
-                                  <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-pink-500/15 text-pink-400">
-                                    <UploadCloud className="h-4 w-4" />
-                                  </div>
-                                  <div className="flex-1">
-                                    <p className="text-xs font-semibold">
-                                      Upload follow screenshot
-                                    </p>
-                                    <p className="mt-1 text-[10px] text-white/50">
-                                      Take a clear screenshot after following
-                                      this creator and upload it here for
-                                      review.
-                                    </p>
-                                  </div>
-                                </div>
-
-                                <div className="mt-3 flex flex-col gap-2 rounded-2xl border border-dashed border-white/15 bg-black/30 px-3 py-3 text-center">
-                                  <input
-                                    id={`file-${task._id}`}
-                                    type="file"
-                                    accept="image/*"
-                                    className="hidden"
-                                    onChange={(e) => {
-                                      const file =
-                                        e.target.files?.[0] || null;
-
-                                      setPreviewUrls((prev) => {
-                                        const oldUrl = prev[task._id];
-                                        if (oldUrl) {
-                                          URL.revokeObjectURL(oldUrl);
-                                        }
-                                        return prev;
-                                      });
-
-                                      setProofFiles((prev) => ({
-                                        ...prev,
-                                        [task._id]: file,
-                                      }));
-
-                                      if (file) {
-                                        const objectUrl =
-                                          URL.createObjectURL(file);
-                                        setPreviewUrls((prev) => ({
-                                          ...prev,
-                                          [task._id]: objectUrl,
-                                        }));
-                                      } else {
-                                        setPreviewUrls((prev) => {
-                                          const next = { ...prev };
-                                          delete next[task._id];
-                                          return next;
-                                        });
-                                      }
-                                    }}
-                                  />
-                                  <label
-                                    htmlFor={`file-${task._id}`}
-                                    className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-full bg:white/5 px-4 py-2 text-[11px] font-semibold text-white/80 hover:bg:white/10"
-                                  >
-                                    <UploadCloud className="h-3 w-3" />
-                                    <span>
-                                      {proofFiles[task._id]
-                                        ? proofFiles[task._id]?.name
-                                        : "Choose screenshot"}
-                                    </span>
-                                  </label>
-
-                                  <p className="text-[10px] text-white/40">
-                                    JPG, PNG up to 5MB.
-                                  </p>
-
-                                  {previewUrls[task._id] && (
-                                    <div className="mt-2 flex justify-center">
-                                      <img
-                                        src={previewUrls[task._id]}
-                                        alt="Screenshot preview"
-                                        className="max-h-40 rounded-lg border border-white/10 object-contain"
-                                      />
-                                    </div>
-                                  )}
-                                </div>
-
-                                <button
-                                  type="button"
-                                  disabled={
-                                    !proofFiles[task._id] ||
-                                    uploadingProof[task._id] === true
-                                  }
-                                  onClick={async () => {
-                                    const file = proofFiles[task._id];
-                                    if (!file) return;
-
-                                    setUploadError(null);
-                                    setUploadingProof((prev) => ({
-                                      ...prev,
-                                      [task._id]: true,
-                                    }));
-
-                                    try {
-                                      const fd = new FormData();
-                                      fd.append("file", file);
-                                      fd.append("taskId", task._id);
-
-                                      const res = await fetch(
-                                        "/api/tasks/upload-proof",
-                                        {
-                                          method: "POST",
-                                          body: fd,
-                                        }
-                                      );
-
-                                      const data = await res.json();
-                                      if (!res.ok || !data.url) {
-                                        setUploadError(
-                                          "Failed to upload screenshot"
-                                        );
-                                        return;
-                                      }
-
-                                      setProofUrls((prev) => ({
-                                        ...prev,
-                                        [task._id]: data.url,
-                                      }));
-                                    } catch (e) {
-                                      console.error("Upload error", e);
-                                      setUploadError("Upload error");
-                                    } finally {
-                                      setUploadingProof((prev) => ({
-                                        ...prev,
-                                        [task._id]: false,
-                                      }));
-                                    }
-                                  }}
-                                  className={`mt-3 flex w-full items:center justify-center gap-2 rounded-full px-4 py-2 text-xs font-semibold ${
-                                    proofFiles[task._id] &&
-                                    !uploadingProof[task._id]
-                                      ? "bg-[#241027] text-white/80 hover:bg-[#2d1231]"
-                                      : "bg-[#241027]/40 text-white/40 cursor-not-allowed"
-                                  }`}
-                                >
-                                  {uploadingProof[task._id]
-                                    ? "Uploading..."
-                                    : hasUploaded
-                                    ? "Re-upload Screenshot"
-                                    : "Upload Screenshot"}
-                                </button>
-
-                                {proofUrls[task._id] && (
-                                  <p className="mt-2 text-center text-[10px] text-green-400">
-                                    Screenshot uploaded · now submit for
-                                    review.
-                                  </p>
-                                )}
-                                {uploadError && (
-                                  <p className="mt-1 text-center text-[10px] text-red-400">
-                                    {uploadError}
-                                  </p>
-                                )}
+                          {/* no waiting; directly show upload + submit when highlighted */}
+                          <div className="rounded-3xl border border-white/10 bg-[#170b1f] px-4 py-3">
+                            <div className="flex items-center gap-3">
+                              <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-pink-500/15 text-pink-400">
+                                <UploadCloud className="h-4 w-4" />
                               </div>
+                              <div className="flex-1">
+                                <p className="text-xs font-semibold">
+                                  Upload follow screenshot
+                                </p>
+                                <p className="mt-1 text-[10px] text-white/50">
+                                  Take a clear screenshot after following this
+                                  creator and upload it here for review.
+                                </p>
+                              </div>
+                            </div>
 
-                              <button
-                                type="button"
-                                disabled={
-                                  isVerifying || !proofUrls[task._id]
-                                }
-                                onClick={() =>
-                                  handleVerify(
-                                    task._id,
-                                    proofUrls[task._id]
-                                  )
-                                }
-                                className={`mt-3 flex w-full items-center justify-center gap-2 rounded-full px-4 py-2 text-xs font-semibold shadow-[0_10px_30px_rgba(255,0,122,0.6)] ${
-                                  !isVerifying && proofUrls[task._id]
-                                    ? "bg-pink-500 text-white hover:bg-pink-600"
-                                    : "bg-pink-500/40 text-white/60 cursor-not-allowed"
-                                }`}
+                            <div className="mt-3 flex flex-col gap-2 rounded-2xl border border-dashed border-white/15 bg-black/30 px-3 py-3 text-center">
+                              <input
+                                id={`file-${task._id}`}
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0] || null;
+
+                                  setPreviewUrls((prev) => {
+                                    const oldUrl = prev[task._id];
+                                    if (oldUrl) {
+                                      URL.revokeObjectURL(oldUrl);
+                                    }
+                                    return prev;
+                                  });
+
+                                  setProofFiles((prev) => ({
+                                    ...prev,
+                                    [task._id]: file,
+                                  }));
+
+                                  if (file) {
+                                    const objectUrl =
+                                      URL.createObjectURL(file);
+                                    setPreviewUrls((prev) => ({
+                                      ...prev,
+                                      [task._id]: objectUrl,
+                                    }));
+                                  } else {
+                                    setPreviewUrls((prev) => {
+                                      const next = { ...prev };
+                                      delete next[task._id];
+                                      return next;
+                                    });
+                                  }
+                                }}
+                              />
+                              <label
+                                htmlFor={`file-${task._id}`}
+                                className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-full bg:white/5 px-4 py-2 text-[11px] font-semibold text-white/80 hover:bg:white/10"
                               >
+                                <UploadCloud className="h-3 w-3" />
                                 <span>
-                                  {isVerifying
-                                    ? "Submitting..."
-                                    : "Submit for Review"}
+                                  {proofFiles[task._id]
+                                    ? proofFiles[task._id]?.name
+                                    : "Choose screenshot"}
                                 </span>
-                              </button>
+                              </label>
 
-                              <p className="mt-1 text-center text-[10px] text-white/40">
-                                Coins will be credited after admin confirms your
-                                follow.
+                              <p className="text-[10px] text-white/40">
+                                JPG, PNG up to 5MB.
                               </p>
-                            </>
-                          )}
+
+                              {previewUrls[task._id] && (
+                                <div className="mt-2 flex justify-center">
+                                  <img
+                                    src={previewUrls[task._id]}
+                                    alt="Screenshot preview"
+                                    className="max-h-40 rounded-lg border border-white/10 object-contain"
+                                  />
+                                </div>
+                              )}
+                            </div>
+
+                            <button
+                              type="button"
+                              disabled={
+                                !proofFiles[task._id] ||
+                                uploadingProof[task._id] === true
+                              }
+                              onClick={async () => {
+                                const file = proofFiles[task._id];
+                                if (!file) return;
+
+                                setUploadError(null);
+                                setUploadingProof((prev) => ({
+                                  ...prev,
+                                  [task._id]: true,
+                                }));
+
+                                try {
+                                  const fd = new FormData();
+                                  fd.append("file", file);
+                                  fd.append("taskId", task._id);
+
+                                  const res = await fetch(
+                                    "/api/tasks/upload-proof",
+                                    {
+                                      method: "POST",
+                                      body: fd,
+                                    }
+                                  );
+
+                                  const data = await res.json();
+                                  if (!res.ok || !data.url) {
+                                    setUploadError(
+                                      "Failed to upload screenshot"
+                                    );
+                                    return;
+                                  }
+
+                                  setProofUrls((prev) => ({
+                                    ...prev,
+                                    [task._id]: data.url,
+                                  }));
+                                } catch (e) {
+                                  console.error("Upload error", e);
+                                  setUploadError("Upload error");
+                                } finally {
+                                  setUploadingProof((prev) => ({
+                                    ...prev,
+                                    [task._id]: false,
+                                  }));
+                                }
+                              }}
+                              className={`mt-3 flex w-full items:center justify-center gap-2 rounded-full px-4 py-2 text-xs font-semibold ${
+                                proofFiles[task._id] &&
+                                !uploadingProof[task._id]
+                                  ? "bg-[#241027] text-white/80 hover:bg-[#2d1231]"
+                                  : "bg-[#241027]/40 text-white/40 cursor-not-allowed"
+                              }`}
+                            >
+                              {uploadingProof[task._id]
+                                ? "Uploading..."
+                                : hasUploaded
+                                ? "Re-upload Screenshot"
+                                : "Upload Screenshot"}
+                            </button>
+
+                            {proofUrls[task._id] && (
+                              <p className="mt-2 text-center text-[10px] text-green-400">
+                                Screenshot uploaded · now submit for review.
+                              </p>
+                            )}
+                            {uploadError && (
+                              <p className="mt-1 text-center text-[10px] text-red-400">
+                                {uploadError}
+                              </p>
+                            )}
+                          </div>
+
+                          <button
+                            type="button"
+                            disabled={
+                              isVerifying || !proofUrls[task._id] || !canV
+                            }
+                            onClick={() =>
+                              handleVerify(task._id, proofUrls[task._id])
+                            }
+                            className={`mt-3 flex w-full items-center justify-center gap-2 rounded-full px-4 py-2 text-xs font-semibold shadow-[0_10px_30px_rgba(255,0,122,0.6)] ${
+                              !isVerifying && proofUrls[task._id] && canV
+                                ? "bg-pink-500 text-white hover:bg-pink-600"
+                                : "bg-pink-500/40 text-white/60 cursor-not-allowed"
+                            }`}
+                          >
+                            <span>
+                              {isVerifying ? "Submitting..." : "Submit for Review"}
+                            </span>
+                          </button>
+
+                          <p className="mt-1 text-center text-[10px] text-white/40">
+                            Coins will be credited after admin confirms your
+                            follow.
+                          </p>
                         </>
                       ) : (
                         <>

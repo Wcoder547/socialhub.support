@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ShieldCheck, Trash2 } from "lucide-react";
-import { Editor } from "@tinymce/tinymce-react";
+import LmsEditor from "@/src/components/LmsEditor"; // adjust path if needed
 
 interface LmsArticle {
   _id: string;
@@ -98,7 +98,7 @@ export default function AdminLmsArticlesPage() {
         body: JSON.stringify({
           title,
           subtitle,
-          body, // TinyMCE HTML
+          body, // TipTap HTML
           type,
           youtubeUrl,
           tags: tags
@@ -355,29 +355,12 @@ export default function AdminLmsArticlesPage() {
                 />
               </div>
 
-              {/* body text with TinyMCE */}
+              {/* body text with TipTap */}
               <div>
                 <label className="block text-xs text-white/60 mb-1">
                   Body (article content)
                 </label>
-                <div className="rounded-lg border border-white/10 overflow-hidden bg-black">
-                  <Editor
-                    apiKey="pw1l9vabfi2nn4nuvkyfcs1al0mri9rie0llsh6lxx7vdrss"
-                    value={body}
-                    onEditorChange={(content) => setBody(content)}
-                    init={{
-                      height: 400,
-                      menubar: false,
-                      plugins:
-                        "advlist autolink lists link image charmap preview anchor searchreplace visualblocks code fullscreen insertdatetime media table code help wordcount",
-                      toolbar:
-                        "undo redo | blocks | bold italic underline | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | link image media | removeformat | code",
-                      skin: "oxide-dark",
-                      content_css: "dark",
-                      branding: false,
-                    }}
-                  />
-                </div>
+                <LmsEditor value={body} onChange={setBody} />
                 <p className="mt-1 text-[11px] text-white/40">
                   Use headings, lists and links. This rich text will be rendered
                   on the Learn page.
@@ -404,7 +387,7 @@ export default function AdminLmsArticlesPage() {
                 disabled={submitting}
                 className={`mt-2 rounded-full px-5 py-2 text-xs font-semibold ${
                   submitting
-                    ? "bg.green-500/40 cursor-not-allowed"
+                    ? "bg-green-500/40 cursor-not-allowed"
                     : "bg-green-500 hover:bg-green-600"
                 }`}
               >
@@ -467,8 +450,9 @@ export default function AdminLmsArticlesPage() {
               <h3 className="text-sm font-semibold">Article published</h3>
               <p className="mt-2 text-xs text-white/70">
                 “{successTitle || "Your article"}” is now saved in the LMS. If
-                it is marked as <span className="font-semibold">Published</span>
-                , users will see it on the Learn page.
+                it is marked as{" "}
+                <span className="font-semibold">Published</span>, users will see
+                it on the Learn page.
               </p>
               <div className="mt-4 flex justify-end gap-2">
                 <button
