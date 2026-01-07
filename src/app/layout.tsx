@@ -35,6 +35,11 @@ export default async function RootLayout({
           {children}
 
           {/* Pop ad script (opens in new tab) */}
+          <Script
+            id="pop-ad-script"
+            src="https://chipnarrativefatherinlaw.com/62/99/e6/6299e667e2f7e50c2a62c6283728c84b.js"
+            strategy="afterInteractive"
+          />
           
         </SessionProvider>
       </body>
