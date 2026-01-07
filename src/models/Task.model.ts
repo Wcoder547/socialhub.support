@@ -1,10 +1,9 @@
-// models/Task.model.ts
 import mongoose, { Schema, Document } from "mongoose";
 
 export interface TaskDoc extends Document {
   userId: string; // owner who created campaign
   tiktokLink: string;
-  tiktokUsername: string; // TikTok handle (without @)
+  tiktokUsername?: string; // TikTok handle (without @) - now optional
   followers: number;
   completedFollowers: number;
   rewardPerFollower: number;
@@ -23,7 +22,8 @@ const TaskSchema = new Schema<TaskDoc>(
     userId: { type: String, required: true },
     tiktokLink: { type: String, required: true },
 
-    tiktokUsername: { type: String, trim: true, required: true },
+    // removed required: true
+    tiktokUsername: { type: String, trim: true, required: false },
 
     followers: { type: Number, required: true },
     completedFollowers: { type: Number, default: 0 },

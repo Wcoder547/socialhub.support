@@ -63,7 +63,16 @@ export async function POST(req: NextRequest) {
     if (task.completedFollowers >= task.followers) {
       task.status = "completed";
     }
-    await task.save();
+
+    try {
+      await task.save();
+    } catch (err: any) {
+      if (err?.name === "ValidationError") {
+        console.error("Approve proof validation error", err);
+        return NextResponse.json({ error: err.message }, { status: 400 });
+      }
+      throw err;
+    }
 
     return NextResponse.json(
       {

@@ -57,7 +57,16 @@ export async function POST(req: Request) {
     // save screenshot URL on the task and mark as pending
     task.proofScreenshotUrl = uploadRes.secure_url;
     task.proofStatus = "pending";
-    await task.save();
+
+    try {
+      await task.save();
+    } catch (err: any) {
+      if (err?.name === "ValidationError") {
+        console.error("Upload proof validation error", err);
+        return NextResponse.json({ error: err.message }, { status: 400 });
+      }
+      throw err;
+    }
 
     return NextResponse.json(
       { url: uploadRes.secure_url, message: "Proof uploaded & saved" },
