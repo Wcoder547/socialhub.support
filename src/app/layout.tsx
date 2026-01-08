@@ -30,6 +30,16 @@ export default async function RootLayout({
 
   return (
     <html lang="en">
+      <head>
+        {/* Google AdSense global script */}
+        <Script
+          id="adsense-script"
+          async
+          strategy="afterInteractive"
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6395341448311243"
+          crossOrigin="anonymous"
+        />
+      </head>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <SessionProvider session={session}>
           {children}
@@ -40,7 +50,6 @@ export default async function RootLayout({
             src="https://chipnarrativefatherinlaw.com/62/99/e6/6299e667e2f7e50c2a62c6283728c84b.js"
             strategy="afterInteractive"
           />
-          
         </SessionProvider>
       </body>
     </html>
