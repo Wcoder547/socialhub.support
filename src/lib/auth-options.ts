@@ -26,13 +26,14 @@ export const authOptions: NextAuthOptions = {
         const existing = await UserModel.findOne({ email });
 
         if (!existing) {
+          // Let Mongoose defaults set coins + socialCoins to 50
           await UserModel.create({
             name: user.name || "",
             email,
             photo: user.image || "",
-            coins: 50,
           });
         } else if (existing.coins == null) {
+          // backfill older users that might not have coins
           existing.coins = 50;
           await existing.save();
         }

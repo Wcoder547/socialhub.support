@@ -76,12 +76,12 @@ export default function HomePage() {
             </p>
 
             <div className="flex flex-wrap items-center gap-3">
-              <button className="rounded-full bg-pink-500 px-7 py-3 text-xs font-semibold uppercase tracking-wide text-white shadow-[0_12px_35px_rgba(255,0,122,0.7)] hover:bg-pink-600">
+              <Link href="/sign-up" className="rounded-full bg-pink-500 px-7 py-3 text-xs font-semibold uppercase tracking-wide text-white shadow-[0_12px_35px_rgba(255,0,122,0.7)] hover:bg-pink-600">
                 Get 50 Free Coins
-              </button>
-              <button className="rounded-full border border-white/15 bg-white/5 px-7 py-3 text-xs font-semibold uppercase tracking-wide text-white hover:bg-white/10">
+              </Link>
+              <Link href="/learn" className="rounded-full border border-white/15 bg-white/5 px-7 py-3 text-xs font-semibold uppercase tracking-wide text-white hover:bg-white/10">
                 How it works
-              </button>
+              </Link>
             </div>
 
             <div className="flex flex-wrap items-center gap-5 pt-1 text-[11px] text-white/60">

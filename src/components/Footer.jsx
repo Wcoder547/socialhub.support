@@ -11,7 +11,7 @@ const Footer = () => {
             <span className="text-xs font-bold text-white">▲</span>
           </div>
           <span className="text-sm font-semibold text-white">
-           socialhub.supportth
+           socialhub.support
           </span>
         </div>
 

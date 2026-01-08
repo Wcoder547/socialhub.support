@@ -1,10 +1,21 @@
+// src/models/User.model.ts
 import mongoose, { Schema, Document } from "mongoose";
 
 export interface User extends Document {
   name: string;
   email: string;
   photo: string;
+
+  // global coins: welcome bonus + TikTok flow
   coins: number;
+
+  // social coins per platform (used only on that platform)
+  socialCoins: {
+    youtube: number;
+    facebook: number;
+    instagram: number;
+  };
+
   role: "user" | "admin";
   passwordHash?: string | null;
 }
@@ -24,7 +35,15 @@ const UserSchema: Schema<User> = new Schema(
       type: String,
       required: [true, "Please Enter photo"],
     },
+
+    // EVERY wallet starts with 50
     coins: { type: Number, default: 50 },
+
+    socialCoins: {
+      youtube: { type: Number, default: 50 },
+      facebook: { type: Number, default: 50 },
+      instagram: { type: Number, default: 50 },
+    },
 
     role: {
       type: String,

@@ -7,7 +7,7 @@ const PUBLIC_AUTH_ROUTES = ["/", "/login", "/signup"];
 
 const ADMIN_COOKIE_NAME = "admin_token";
 
-export async function middleware(req: NextRequest) {
+export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
   const token = await getToken({
