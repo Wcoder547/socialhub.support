@@ -9,13 +9,17 @@ import { useState } from "react";
 const DashboardNavbar = () => {
   const router = useRouter();
   const { data: session } = useSession();
-  const photo = session?.user?.photo;
-  const name = session?.user?.name || "User";
-  const coins = session?.user?.coins ?? 0;
+
+  // cast to any so we can safely read custom fields (photo, coins)
+  const user = session?.user as any | undefined;
+
+  const photo: string | undefined = user?.photo ?? user?.image ?? undefined;
+  const name: string = user?.name || "User";
+  const coins: number = user?.coins ?? 0;
 
   const [open, setOpen] = useState(false);
 
-  const handleNav = (path) => {
+  const handleNav = (path: string) => {
     setOpen(false);
     router.push(path);
   };
@@ -103,9 +107,8 @@ const DashboardNavbar = () => {
           </button>
         </div>
 
-        {/* Mobile actions – Social platforms + coins always visible, menu for extras */}
+        {/* Mobile actions */}
         <div className="flex items-center gap-1.5 sm:hidden">
-          {/* Social platforms primary CTA */}
           <button
             type="button"
             onClick={() => handleNav("/earn-coins/social")}
@@ -133,7 +136,7 @@ const DashboardNavbar = () => {
             </button>
           </div>
 
-          {/* Hamburger for Updates + Logout */}
+          {/* Hamburger */}
           <button
             type="button"
             onClick={() => setOpen((v) => !v)}
@@ -144,12 +147,11 @@ const DashboardNavbar = () => {
         </div>
       </div>
 
-      {/* Mobile dropdown: small, floating panel */}
+      {/* Mobile dropdown */}
       {open && (
         <div className="sm:hidden">
           <div className="mx-auto max-w-5xl px-3 pb-3">
             <div className="mt-1 w-full rounded-2xl border border-[#2a0f26] bg-[#1b0b20]/95 px-3 py-2 shadow-[0_18px_40px_rgba(0,0,0,0.85)] backdrop-blur-md">
-              {/* Updates */}
               <button
                 onClick={() => handleNav("/learn")}
                 className="flex w-full items-center justify-between rounded-xl px-2.5 py-2 text-xs font-semibold text-white hover:bg-white/5 active:scale-[0.99] transition"
@@ -161,13 +163,11 @@ const DashboardNavbar = () => {
                 <span className="text-[10px] text-white/60">What&apos;s new</span>
               </button>
 
-              {/* Divider */}
               <div className="my-1 h-px bg-white/10" />
 
-              {/* Logout */}
               <button
                 onClick={() => signOut({ callbackUrl: "/" })}
-                className="flex w-full items-center justify-start gap-1.5 rounded-xl px-2.5 py-2 text-[11px] font-medium text-pink-200 hover:bg-white/5 active:scale-[0.99] transition"
+                className="flex w-full items-center justify-start gap-1.5 rounded-xl px-2.5 py-2 text-[11px] font-medium text-pink-200 hover:bg:white/5 active:scale-[0.99] transition"
               >
                 <LogOut className="h-4 w-4" />
                 <span>Log out</span>
