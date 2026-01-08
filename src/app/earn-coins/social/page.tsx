@@ -31,7 +31,7 @@ const PLATFORMS: SocialPlatform[] = ["youtube", "facebook", "instagram"];
 const keyFor = (_platform: SocialPlatform, id: string) => id;
 
 export default function SocialEarnCoinsPage() {
-  const { status } = useSession();
+  const { status, data: session } = useSession();
   const [platform, setPlatform] = useState<SocialPlatform>("youtube");
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [loading, setLoading] = useState(false);
@@ -41,6 +41,29 @@ export default function SocialEarnCoinsPage() {
   const [highlighted, setHighlighted] = useState<Record<string, boolean>>({});
   const [submitting, setSubmitting] = useState<Record<string, boolean>>({});
   const [completed, setCompleted] = useState<Record<string, boolean>>({});
+
+  // per-platform coins from session.user.socialCoins
+  const [platformCoins, setPlatformCoins] = useState<{
+    youtube: number;
+    facebook: number;
+    instagram: number;
+  }>({
+    youtube: 0,
+    facebook: 0,
+    instagram: 0,
+  });
+
+  // load socialCoins from session when available
+  useEffect(() => {
+    const sc = (session?.user as any)?.socialCoins;
+    if (sc) {
+      setPlatformCoins({
+        youtube: sc.youtube ?? 0,
+        facebook: sc.facebook ?? 0,
+        instagram: sc.instagram ?? 0,
+      });
+    }
+  }, [session]);
 
   // load completed from localStorage (per browser)
   useEffect(() => {
@@ -161,6 +184,14 @@ export default function SocialEarnCoinsPage() {
       setGlobalSuccess(
         data?.message || "Proof accepted, coins credited."
       );
+
+      // optional: if backend returns new balance, update it here
+      if (data?.newBalance != null) {
+        setPlatformCoins((prev) => ({
+          ...prev,
+          [platform]: data.newBalance,
+        }));
+      }
     } catch (e) {
       console.error("submit proof error", e);
       setGlobalError("Something went wrong while verifying.");
@@ -168,6 +199,8 @@ export default function SocialEarnCoinsPage() {
       setSubmitting((prev) => ({ ...prev, [idKey]: false }));
     }
   };
+
+  const currentPlatformCoins = platformCoins[platform];
 
   return (
     <>
@@ -185,6 +218,18 @@ export default function SocialEarnCoinsPage() {
                 Follow YouTube, Facebook and Instagram profiles, upload a
                 screenshot, then submit for review to get coins.
               </p>
+            </div>
+
+            {/* current balance card (like screenshot) */}
+            <div className="mb-6 grid gap-4 md:grid-cols-3">
+              <div className="rounded-3xl bg-[#1c0825] px-5 py-4 shadow-[0_18px_60px_rgba(0,0,0,0.7)]">
+                <p className="text-[11px] text-white/60">
+                  Current {platform.toUpperCase()} Balance
+                </p>
+                <p className="mt-2 text-xl font-semibold text-pink-400">
+                  {currentPlatformCoins} Coins
+                </p>
+              </div>
             </div>
 
             {/* platform pills */}
