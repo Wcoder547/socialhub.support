@@ -26,15 +26,35 @@ export const authOptions: NextAuthOptions = {
         const existing = await UserModel.findOne({ email });
 
         if (!existing) {
-          // Let Mongoose defaults set coins + socialCoins to 50
+          // New user: let schema defaults set coins + socialCoins to 50
           await UserModel.create({
             name: user.name || "",
             email,
             photo: user.image || "",
           });
-        } else if (existing.coins == null) {
-          // backfill older users that might not have coins
-          existing.coins = 50;
+        } else {
+          // Existing user: backfill coins + socialCoins once
+          if (existing.coins == null) {
+            existing.coins = 50;
+          }
+
+          if (!existing.socialCoins) {
+            // whole object missing
+            existing.socialCoins = {
+              youtube: 50,
+              facebook: 50,
+              instagram: 50,
+            };
+          } else {
+            // per-key backfill if any key is null/undefined
+            if (existing.socialCoins.youtube == null)
+              existing.socialCoins.youtube = 50;
+            if (existing.socialCoins.facebook == null)
+              existing.socialCoins.facebook = 50;
+            if (existing.socialCoins.instagram == null)
+              existing.socialCoins.instagram = 50;
+          }
+
           await existing.save();
         }
 
@@ -56,6 +76,11 @@ export const authOptions: NextAuthOptions = {
           (session.user as any).id = dbUser._id.toString();
           (session.user as any).photo = dbUser.photo;
           (session.user as any).coins = dbUser.coins ?? 0;
+          (session.user as any).socialCoins = dbUser.socialCoins ?? {
+            youtube: 0,
+            facebook: 0,
+            instagram: 0,
+          };
         }
       }
       return session;
