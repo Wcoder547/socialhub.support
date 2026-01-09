@@ -4,14 +4,15 @@ import DashboardNavbar from "@/src/components/DashboardNavbar";
 import { Rocket, TrendingUp, Instagram, Youtube } from "lucide-react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
+import AdsenseRect from "@/src/components/AdsenseRect";
 
 function TikTokLogo() {
   return (
     <div className="relative flex h-5 w-5 items-center justify-center">
-      <span className="absolute translate-x-[1px] translate-y-[1px] text-[18px] text-[#25f4ee] leading-none">
+      <span className="absolute translate-x-px translate-y-px text-[18px] text-[#25f4ee] leading-none">
         ♬
       </span>
-      <span className="absolute -translate-x-[1px] text-[18px] text-[#fe2c55] leading-none">
+      <span className="absolute -translate-x-px text-[18px] text-[#fe2c55] leading-none">
         ♬
       </span>
       <span className="relative text-[18px] text-white leading-none">♬</span>
@@ -27,9 +28,9 @@ export default function DashboardPage() {
     <main className="min-h-screen bg-[#120814] text-white">
       <DashboardNavbar />
 
-      <div className="mx-auto max-w-5xl px-4 py-10 md:px-6">
+      <div className="mx-auto flex min-h-[calc(100vh-64px)] max-w-5xl flex-col px-4 py-10 md:px-6">
         {/* welcome */}
-        <section className="mx-auto max-w-5xl px-4 md:px-6">
+        <section className="mx-auto w-full max-w-5xl">
           <div className="text-center">
             <p className="text-[11px] uppercase tracking-[0.2em] text-pink-400/80">
               Dashboard
@@ -44,7 +45,7 @@ export default function DashboardPage() {
         </section>
 
         {/* TikTok section label */}
-        <section className="mx-auto mt-10 max-w-5xl px-4 md:px-6">
+        <section className="mx-auto mt-10 w-full max-w-5xl">
           <div className="flex items-center justify-between gap-3">
             <div>
               <p className="text-[11px] font-semibold uppercase tracking-[0.25em] text-pink-400/80">
@@ -59,7 +60,7 @@ export default function DashboardPage() {
           {/* TikTok cards */}
           <div className="mt-6 grid gap-8 md:grid-cols-2">
             {/* Earn Coins (TikTok) */}
-            <div className="relative overflow-hidden rounded-[40px] bg-gradient-to-br from-[#21102a] via-[#1b0d24] to-[#120814] px-8 py-9 shadow-[0_25px_80px_rgba(0,0,0,0.7)]">
+            <div className="relative overflow-hidden rounded-[40px] bg-linear-to-br from-[#21102a] via-[#1b0d24] to-[#120814] px-8 py-9 shadow-[0_25px_80px_rgba(0,0,0,0.7)]">
               <div className="pointer-events-none absolute -right-12 -top-12 h-32 w-32 rounded-full bg-pink-500/20 blur-2xl" />
               <div className="mb-5 inline-flex items-center gap-2 rounded-full bg-pink-500/10 px-3 py-1 text-[11px] text-pink-200">
                 <TikTokLogo />
@@ -89,7 +90,7 @@ export default function DashboardPage() {
             </div>
 
             {/* Get Followers (TikTok) */}
-            <div className="relative overflow-hidden rounded-[40px] bg-gradient-to-br from-[#281126] via-[#1b0d24] to-[#120814] px-8 py-9 shadow-[0_25px_80px_rgba(0,0,0,0.7)]">
+            <div className="relative overflow-hidden rounded-[40px] bg-linear-to-br from-[#281126] via-[#1b0d24] to-[#120814] px-8 py-9 shadow-[0_25px_80px_rgba(0,0,0,0.7)]">
               <div className="pointer-events-none absolute -right-10 -top-10 h-28 w-28 rounded-full bg-pink-500/25 blur-2xl" />
               <div className="mb-5 inline-flex items-center gap-2 rounded-full bg-pink-500/10 px-3 py-1 text-[11px] text-pink-200">
                 <TikTokLogo />
@@ -122,7 +123,7 @@ export default function DashboardPage() {
         </section>
 
         {/* Other social platforms – cards navigate with ?platform=... */}
-        <section className="mx-auto mt-10 max-w-5xl px-4 md:px-6">
+        <section className="mx-auto mt-10 w-full max-w-5xl">
           <div className="flex items-center justify-between gap-3">
             <div>
               <p className="text-[11px] font-semibold uppercase tracking-[0.25em] text-blue-300/80">
@@ -138,7 +139,7 @@ export default function DashboardPage() {
             {/* Facebook followers */}
             <Link
               href="/get-followers/social?platform=facebook"
-              className="group relative overflow-hidden rounded-[32px] bg-[#151224] px-5 py-6 shadow-[0_22px_70px_rgba(0,0,0,0.8)] ring-1 ring-white/5 transition-transform duration-200 hover:-translate-y-1 hover:ring-blue-400/60"
+              className="group relative overflow-hidden rounded-4xl bg-[#151224] px-5 py-6 shadow-[0_22px_70px_rgba(0,0,0,0.8)] ring-1 ring-white/5 transition-transform duration-200 hover:-translate-y-1 hover:ring-blue-400/60"
             >
               <div className="pointer-events-none absolute -right-10 -top-10 h-24 w-24 rounded-full bg-blue-500/30 blur-2xl" />
               <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#1877f2] text-white shadow-[0_0_18px_rgba(24,119,242,0.7)]">
@@ -159,10 +160,10 @@ export default function DashboardPage() {
             {/* Instagram followers */}
             <Link
               href="/get-followers/social?platform=instagram"
-              className="group relative overflow-hidden rounded-[32px] bg-[#181024] px-5 py-6 shadow-[0_22px_70px_rgba(0,0,0,0.8)] ring-1 ring-white/5 transition-transform duration-200 hover:-translate-y-1 hover:ring-pink-400/60"
+              className="group relative overflow-hidden rounded-4xl bg-[#181024] px-5 py-6 shadow-[0_22px_70px_rgba(0,0,0,0.8)] ring-1 ring-white/5 transition-transform duration-200 hover:-translate-y-1 hover:ring-pink-400/60"
             >
               <div className="pointer-events-none absolute -right-10 -top-10 h-24 w-24 rounded-full bg-pink-500/40 blur-2xl" />
-              <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-600 text-white shadow-[0_0_18px_rgba(244,114,182,0.7)]">
+              <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-linear-to-tr from-yellow-400 via-pink-500 to-purple-600 text-white shadow-[0_0_18px_rgba(244,114,182,0.7)]">
                 <Instagram className="h-5 w-5" />
               </div>
               <h3 className="mt-4 text-sm font-semibold">Instagram Followers</h3>
@@ -180,7 +181,7 @@ export default function DashboardPage() {
             {/* YouTube subscribers */}
             <Link
               href="/get-followers/social?platform=youtube"
-              className="group relative overflow-hidden rounded-[32px] bg-[#1c1018] px-5 py-6 shadow-[0_22px_70px_rgba(0,0,0,0.8)] ring-1 ring-white/5 transition-transform duration-200 hover:-translate-y-1 hover:ring-red-400/60"
+              className="group relative overflow-hidden rounded-4xl bg-[#1c1018] px-5 py-6 shadow-[0_22px_70px_rgba(0,0,0,0.8)] ring-1 ring-white/5 transition-transform duration-200 hover:-translate-y-1 hover:ring-red-400/60"
             >
               <div className="pointer-events-none absolute -right-10 -top-10 h-24 w-24 rounded-full bg-red-500/40 blur-2xl" />
               <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#ff0000] text-white shadow-[0_0_18px_rgba(239,68,68,0.7)]">
@@ -199,6 +200,11 @@ export default function DashboardPage() {
             </Link>
           </div>
         </section>
+
+        {/* AdSense block above footer */}
+        <div className="mt-10 flex justify-center">
+          <AdsenseRect />
+        </div>
       </div>
     </main>
   );

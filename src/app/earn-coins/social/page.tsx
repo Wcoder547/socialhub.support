@@ -12,6 +12,7 @@ import {
   Users,
   ShieldCheck,
 } from "lucide-react";
+import { useSearchParams, useRouter } from "next/navigation";
 
 type SocialPlatform = "youtube" | "facebook" | "instagram";
 
@@ -27,12 +28,34 @@ interface Campaign {
 
 const PLATFORMS: SocialPlatform[] = ["youtube", "facebook", "instagram"];
 
-// helper key: per campaign only, so once used it's always disabled
+
 const keyFor = (_platform: SocialPlatform, id: string) => id;
 
 export default function SocialEarnCoinsPage() {
   const { status, data: session } = useSession();
-  const [platform, setPlatform] = useState<SocialPlatform>("youtube");
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
+ 
+  const urlPlatform = (searchParams.get("platform") || "").toLowerCase();
+
+  const normalizePlatform = (p: string | null): SocialPlatform => {
+    if (!p) return "youtube";
+    if (p === "fb" || p === "facebook") return "facebook";
+    if (p === "insta" || p === "instagram") return "instagram";
+    return "youtube";
+  };
+
+  const [platform, setPlatform] = useState<SocialPlatform>(
+    normalizePlatform(urlPlatform)
+  );
+
+  
+  useEffect(() => {
+    setPlatform(normalizePlatform(urlPlatform));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [urlPlatform]);
+
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [loading, setLoading] = useState(false);
   const [globalError, setGlobalError] = useState<string | null>(null);
@@ -42,7 +65,7 @@ export default function SocialEarnCoinsPage() {
   const [submitting, setSubmitting] = useState<Record<string, boolean>>({});
   const [completed, setCompleted] = useState<Record<string, boolean>>({});
 
-  // per-platform coins from session.user.socialCoins
+
   const [platformCoins, setPlatformCoins] = useState<{
     youtube: number;
     facebook: number;
@@ -53,7 +76,16 @@ export default function SocialEarnCoinsPage() {
     instagram: 0,
   });
 
-  // load socialCoins from session when available
+  const handlePlatformChange = (p: SocialPlatform) => {
+    setPlatform(p);
+    const param =
+      p === "facebook" ? "fb" : p === "instagram" ? "insta" : "youtube";
+    const sp = new URLSearchParams(searchParams.toString());
+    sp.set("platform", param);
+    router.replace(`/earn-coins/social?${sp.toString()}`);
+  };
+
+ 
   useEffect(() => {
     const sc = (session?.user as any)?.socialCoins;
     if (sc) {
@@ -65,7 +97,7 @@ export default function SocialEarnCoinsPage() {
     }
   }, [session]);
 
-  // load completed from localStorage (per browser)
+ 
   useEffect(() => {
     if (typeof window === "undefined") return;
     const stored = localStorage.getItem("socialCompletedCampaigns");
@@ -85,7 +117,7 @@ export default function SocialEarnCoinsPage() {
     }
   }, []);
 
-  // persist completed -> localStorage
+ 
   useEffect(() => {
     if (typeof window === "undefined") return;
     localStorage.setItem(
@@ -107,7 +139,7 @@ export default function SocialEarnCoinsPage() {
       const list: Campaign[] = data.campaigns || [];
       setCampaigns(list);
 
-      // mark exhausted campaigns completed
+     
       setCompleted((prev) => {
         const next = { ...prev };
         list.forEach((c) => {
@@ -129,7 +161,7 @@ export default function SocialEarnCoinsPage() {
 
   useEffect(() => {
     loadCampaigns(platform);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+   
   }, [platform]);
 
   if (status === "loading") {
@@ -178,14 +210,14 @@ export default function SocialEarnCoinsPage() {
         return;
       }
 
-      // mark completed permanently (stored to localStorage by effect)
+      
       setCompleted((prev) => ({ ...prev, [idKey]: true }));
       clearLocalFile();
       setGlobalSuccess(
         data?.message || "Proof accepted, coins credited."
       );
 
-      // optional: if backend returns new balance, update it here
+     
       if (data?.newBalance != null) {
         setPlatformCoins((prev) => ({
           ...prev,
@@ -207,7 +239,7 @@ export default function SocialEarnCoinsPage() {
       <main className="min-h-screen bg-[#120814] text-white">
         <DashboardNavbar />
 
-        <section className="bg-gradient-to-b from-[#14091e] via-[#120814] to-[#120814]">
+        <section className="bg-linear-to-b from-[#14091e] via-[#120814] to-[#120814]">
           <div className="mx-auto max-w-5xl px-4 py-8 md:px-6 md:py-10">
             {/* header */}
             <div className="mb-6 text-center">
@@ -220,7 +252,7 @@ export default function SocialEarnCoinsPage() {
               </p>
             </div>
 
-            {/* current balance card (like screenshot) */}
+           
             <div className="mb-6 grid gap-4 md:grid-cols-3">
               <div className="rounded-3xl bg-[#1c0825] px-5 py-4 shadow-[0_18px_60px_rgba(0,0,0,0.7)]">
                 <p className="text-[11px] text-white/60">
@@ -232,16 +264,16 @@ export default function SocialEarnCoinsPage() {
               </div>
             </div>
 
-            {/* platform pills */}
+           
             <div className="flex flex-wrap items-center justify-center gap-2">
               <div className="inline-flex flex-wrap gap-2 rounded-full bg-[#1b0d24] px-2 py-1">
                 {PLATFORMS.map((p) => (
                   <button
                     key={p}
-                    onClick={() => setPlatform(p)}
+                    onClick={() => handlePlatformChange(p)}
                     className={`px-3 py-1 rounded-full text-xs md:text-sm transition ${
                       platform === p
-                        ? "bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-500 text-white shadow-[0_0_18px_rgba(168,85,247,0.6)]"
+                        ? "bg-linear-to-r from-pink-500 via-purple-500 to-indigo-500 text-white shadow-[0_0_18px_rgba(168,85,247,0.6)]"
                         : "text-white/70 hover:bg-[#281234]"
                     }`}
                   >
@@ -251,7 +283,7 @@ export default function SocialEarnCoinsPage() {
               </div>
             </div>
 
-            {/* status messages */}
+            
             {globalError && (
               <p className="mt-4 text-center text-xs text-red-400">
                 {globalError}
@@ -303,7 +335,7 @@ export default function SocialEarnCoinsPage() {
                 })}
 
               {!loading && campaigns.length === 0 && (
-                <div className="col-span-4 rounded-[32px] bg-[#1b0d24] px-6 py-8 text-center text-sm text-white/60 shadow-[0_24px_70px_rgba(0,0,0,0.7)]">
+                <div className="col-span-4 rounded-4xl bg-[#1b0d24] px-6 py-8 text-center text-sm text-white/60 shadow-[0_24px_70px_rgba(0,0,0,0.7)]">
                   No active campaigns for {platform.toUpperCase()} right now.
                   Check back soon.
                 </div>
@@ -317,7 +349,6 @@ export default function SocialEarnCoinsPage() {
   );
 }
 
-/* -------- card component -------- */
 
 interface CardProps {
   platform: SocialPlatform;

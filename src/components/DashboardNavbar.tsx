@@ -1,6 +1,14 @@
 "use client";
 
-import { LogOut, Menu, Sparkles, Users, X } from "lucide-react";
+import {
+  LogOut,
+  Menu,
+  Sparkles,
+  X,
+  Facebook,
+  Instagram,
+  Youtube,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
 import Image from "next/image";
@@ -24,6 +32,11 @@ const DashboardNavbar = () => {
     router.push(path);
   };
 
+  const handleSocialNav = (platform: string) => {
+    setOpen(false);
+    router.push(`/earn-coins/social?platform=${platform}`);
+  };
+
   return (
     <header className="border-b border-[#2a0f26] bg-[#170818]">
       <div className="mx-auto flex max-w-5xl items-center justify-between px-3 py-2.5 md:px-4">
@@ -42,15 +55,33 @@ const DashboardNavbar = () => {
 
         {/* Desktop actions */}
         <div className="hidden sm:flex items-center gap-2.5">
-          {/* Social platforms */}
-          <button
-            type="button"
-            onClick={() => handleNav("/earn-coins/social")}
-            className="flex items-center justify-center rounded-full bg-gradient-to-br from-sky-500 via-blue-500 to-indigo-500 px-3.5 py-1.5 text-[11px] font-semibold text-white shadow-[0_0_12px_rgba(59,130,246,0.6)] hover:brightness-110 active:scale-[0.97] transition"
-          >
-            <Users className="h-4 w-4" />
-            <span className="ml-1 leading-none">Social platforms</span>
-          </button>
+          {/* Social platform icon buttons */}
+          <div className="flex items-center gap-1.5">
+            {/* FB */}
+            <button
+              type="button"
+              onClick={() => handleSocialNav("fb")}
+              className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-sky-500 via-blue-500 to-indigo-500 text-white text-xs shadow-[0_0_12px_rgba(59,130,246,0.6)] hover:brightness-110 active:scale-[0.97] transition"
+            >
+              <Facebook className="h-4 w-4" />
+            </button>
+            {/* Insta */}
+            <button
+              type="button"
+              onClick={() => handleSocialNav("insta")}
+              className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-[#fd594e] via-[#d62976] to-[#833ab4] text-white text-xs shadow-[0_0_12px_rgba(214,41,118,0.55)] hover:brightness-110 active:scale-[0.97] transition"
+            >
+              <Instagram className="h-4 w-4" />
+            </button>
+            {/* YouTube */}
+            <button
+              type="button"
+              onClick={() => handleSocialNav("youtube")}
+              className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-[#ff3d3d] via-[#e11d48] to-[#b91c1c] text-white text-xs shadow-[0_0_12px_rgba(220,38,38,0.55)] hover:brightness-110 active:scale-[0.97] transition"
+            >
+              <Youtube className="h-4 w-4" />
+            </button>
+          </div>
 
           {/* Coins pill */}
           <div className="flex items-center rounded-full bg-[#2b0f2b] px-1.5 py-1">
@@ -109,14 +140,33 @@ const DashboardNavbar = () => {
 
         {/* Mobile actions */}
         <div className="flex items-center gap-1.5 sm:hidden">
-          <button
-            type="button"
-            onClick={() => handleNav("/earn-coins/social")}
-            className="flex items-center justify-center rounded-full bg-gradient-to-br from-sky-500 via-blue-500 to-indigo-500 px-3 py-1.5 text-[10px] font-semibold text-white shadow-[0_0_10px_rgba(59,130,246,0.6)] hover:brightness-110 active:scale-[0.97] transition"
-          >
-            <Users className="h-3.5 w-3.5" />
-            <span className="ml-1 leading-none">Social platforms</span>
-          </button>
+          {/* Social platform icon buttons (mobile) */}
+          <div className="flex items-center gap-1">
+            {/* FB */}
+            <button
+              type="button"
+              onClick={() => handleSocialNav("fb")}
+              className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-sky-500 via-blue-500 to-indigo-500 text-white text-[10px] shadow-[0_0_10px_rgba(59,130,246,0.6)] hover:brightness-110 active:scale-[0.97] transition"
+            >
+              <Facebook className="h-3.5 w-3.5" />
+            </button>
+            {/* Insta */}
+            <button
+              type="button"
+              onClick={() => handleSocialNav("insta")}
+              className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-[#fd594e] via-[#d62976] to-[#833ab4] text-white text-[10px] shadow-[0_0_10px_rgba(214,41,118,0.55)] hover:brightness-110 active:scale-[0.97] transition"
+            >
+              <Instagram className="h-3.5 w-3.5" />
+            </button>
+            {/* YouTube */}
+            <button
+              type="button"
+              onClick={() => handleSocialNav("youtube")}
+              className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-[#ff3d3d] via-[#e11d48] to-[#b91c1c] text-white text-[10px] shadow-[0_0_10px_rgba(220,38,38,0.55)] hover:brightness-110 active:scale-[0.97] transition"
+            >
+              <Youtube className="h-3.5 w-3.5" />
+            </button>
+          </div>
 
           {/* Coins pill */}
           <div className="flex items-center rounded-full bg-[#2b0f2b] px-1.5 py-1">
@@ -160,7 +210,9 @@ const DashboardNavbar = () => {
                   <Sparkles className="h-4 w-4 text-pink-300" />
                   <span>Updates · Learn</span>
                 </span>
-                <span className="text-[10px] text-white/60">What&apos;s new</span>
+                <span className="text-[10px] text-white/60">
+                  What&apos;s new
+                </span>
               </button>
 
               <div className="my-1 h-px bg-white/10" />
