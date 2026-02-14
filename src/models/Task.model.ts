@@ -1,18 +1,21 @@
+// src/models/Task.model.ts
 import mongoose, { Schema, Document } from "mongoose";
 
 export interface TaskDoc extends Document {
-  userId: string; // owner who created campaign
+  userId: string;
   tiktokLink: string;
-  tiktokUsername?: string; // TikTok handle (without @) - now optional
+  tiktokUsername?: string;
   followers: number;
   completedFollowers: number;
   rewardPerFollower: number;
   totalCost: number;
   status: "pending" | "active" | "completed" | "cancelled";
   createdByRole: "admin" | "user";
-  proofScreenshotUrl?: string | null;
+
   proofStatus?: "pending" | "approved" | "rejected" | null;
   proofSubmittedBy?: mongoose.Types.ObjectId | null;
+  submittedAt?: Date | null;
+
   createdAt: Date;
   updatedAt: Date;
 }
@@ -21,10 +24,7 @@ const TaskSchema = new Schema<TaskDoc>(
   {
     userId: { type: String, required: true },
     tiktokLink: { type: String, required: true },
-
-    // removed required: true
     tiktokUsername: { type: String, trim: true, required: false },
-
     followers: { type: Number, required: true },
     completedFollowers: { type: Number, default: 0 },
     rewardPerFollower: { type: Number, required: true },
@@ -42,10 +42,9 @@ const TaskSchema = new Schema<TaskDoc>(
       default: "user",
     },
 
-    proofScreenshotUrl: { type: String, default: null },
     proofStatus: {
       type: String,
-      enum: ["pending", "approved", "rejected", null],
+      enum: ["pending", "approved", "rejected"],
       default: null,
     },
     proofSubmittedBy: {
@@ -53,8 +52,12 @@ const TaskSchema = new Schema<TaskDoc>(
       ref: "User",
       default: null,
     },
+    submittedAt: {
+      type: Date,
+      default: null,
+    },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 const TaskModel =

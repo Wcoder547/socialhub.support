@@ -2,13 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
 import {
-  CheckCircle2,
-  XCircle,
-  ExternalLink,
-  RefreshCw,
-  ShieldCheck,
+    ShieldCheck,
 } from "lucide-react";
 
 type TaskStatus = "pending" | "active" | "paused" | "completed";
@@ -352,7 +347,7 @@ export default function AdminDashboardPage() {
         <div className="mx-auto max-w-6xl px-4 py-6 md:px-8 space-y-8">
           {/* Stats row */}
           <section className="grid gap-4 md:grid-cols-3">
-            <div className="rounded-2xl bg-gradient-to-br from-pink-500 to-purple-600 px-5 py-4 shadow-[0_18px_50px_rgba(255,0,122,0.5)]">
+            <div className="rounded-2xl bg-linear-to-br from-pink-500 to-purple-600 px-5 py-4 shadow-[0_18px_50px_rgba(255,0,122,0.5)]">
               <p className="text-xs text-white/80">Pending proofs</p>
               <p className="mt-2 text-2xl font-semibold">
                 {proofTasks.length}
@@ -411,7 +406,7 @@ export default function AdminDashboardPage() {
                   >
                     <div className="flex-1 space-y-1">
                       <div className="flex items-center gap-2">
-                        <span className="rounded-full bg-[#241027] px-2 py-[2px] text-[10px] uppercase tracking-wide text-white/70">
+                        <span className="rounded-full bg-[#241027] px-2 py-0.5 text-[10px] uppercase tracking-wide text-white/70">
                           {task.createdByRole === "admin"
                             ? "Admin Task"
                             : "User Task"}
